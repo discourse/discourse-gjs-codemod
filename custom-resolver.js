@@ -3,14 +3,6 @@ import discourseModules from "./exports/discourse.js";
 
 const pluginName = JSON.parse(readFileSync("./package.json")).name;
 
-const roots = [
-  "discourse/app",
-  "admin/addon",
-  "select-kit/addon",
-  "float-kit/addon",
-  "dialog-holder/addon",
-];
-
 function itemExists(path) {
   return (
     globSync(`${path}.{js,gjs,hbs}`).length ||
@@ -19,14 +11,6 @@ function itemExists(path) {
 }
 
 function findItem(type, name) {
-  // core and bundled addons
-  // for (let location of roots) {
-  //   const pkg = location.match(/(.+)\//)[1];
-  //   if (itemExists(`../../app/assets/javascripts/${location}/${name}`)) {
-  //     return `${pkg}/${name}`;
-  //   }
-  // }
-
   if (discourseModules[type][name]) {
     return discourseModules[type][name];
   }
