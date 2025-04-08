@@ -46,6 +46,7 @@ try {
         completedRun = true;
       }
     },
+    env: { FORCE_COLOR: true },
   })`${cli}
 --relativeLocalPaths=false
 --nativeRouteTemplates=false
