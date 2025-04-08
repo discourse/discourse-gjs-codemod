@@ -1,0 +1,20 @@
+{
+  "name": "discourse-plugin-gjs-codemod",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "bin": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "packageManager": "pnpm@10.6.2",
+  "dependencies": {
+    "@embroider/template-tag-codemod": "^1.2.0",
+    "execa": "^9.5.2"
+  },
+  "exports": {
+    "./tests/*": "./tests/*",
+    "./*": "./app/*"
+  }
+}
