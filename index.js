@@ -48,16 +48,16 @@ try {
     },
     env: { FORCE_COLOR: true },
   })`${cli}
---relativeLocalPaths=false
---nativeRouteTemplates=false
---nativeLexicalThis=false
---templateInsertion=end
---addNameToTemplateOnly
---renderTests=test/**/*.js
---routeTemplates=**/templates/**/*.hbs
---components=**/components/**/*.hbs
---customResolver=${join(import.meta.dirname, "custom-resolver.js")}
---renamingRules=${join(import.meta.dirname, "rules.js")}
+      --relativeLocalPaths=false
+      --nativeRouteTemplates=false
+      --nativeLexicalThis=false
+      --templateInsertion=end
+      --addNameToTemplateOnly
+      --renderTests=test/**/*.js
+      --routeTemplates=**/templates/**/*.hbs
+      --components=**/components/**/*.hbs
+      --customResolver=${join(import.meta.dirname, "custom-resolver.js")}
+      --renamingRules=${join(import.meta.dirname, "rules.js")}
 `;
 } catch (error) {
   if (!completedRun) {
