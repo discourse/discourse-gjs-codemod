@@ -7,6 +7,14 @@ import selectKit from "./core-modules/select-kit.js";
 import truthHelpers from "./core-modules/truth-helpers.js";
 
 const packageName = process.env.PACKAGE_NAME;
+const coreModules = [
+  discourse,
+  admin,
+  dialogHolder,
+  floatKit,
+  selectKit,
+  truthHelpers,
+];
 
 function itemExists(path) {
   return (
@@ -15,19 +23,18 @@ function itemExists(path) {
   );
 }
 
+function findCoreModule(type, name) {
+  for (const mod of coreModules) {
+    if (mod[type][name]) {
+      return mod[type][name];
+    }
+  }
+}
+
 function findItem(type, name) {
-  if (discourse[type][name]) {
-    return discourse[type][name];
-  } else if (admin[type][name]) {
-    return admin[type][name];
-  } else if (dialogHolder[type][name]) {
-    return dialogHolder[type][name];
-  } else if (floatKit[type][name]) {
-    return floatKit[type][name];
-  } else if (selectKit[type][name]) {
-    return selectKit[type][name];
-  } else if (truthHelpers[type][name]) {
-    return truthHelpers[type][name];
+  const coreModule = findCoreModule(type, name);
+  if (coreModule) {
+    return coreModule;
   }
 
   // target plugin
