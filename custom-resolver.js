@@ -1,5 +1,5 @@
 import { globSync, readFileSync } from "node:fs";
-import discourseModules from "./exports/discourse.js";
+import discourseModules from "./core-modules/discourse.js";
 
 const pluginName = JSON.parse(readFileSync("./package.json")).name;
 
