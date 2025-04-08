@@ -1,14 +1,13 @@
-import { dirname, join } from "node:path";
-import { execa } from "execa";
+import { basename, dirname, join } from "node:path";
+import { cwd } from "node:process";
 import { fileURLToPath } from "node:url";
 import { readFileSync, writeFileSync } from "node:fs";
+import { execa } from "execa";
 
 let location = import.meta.resolve("@embroider/template-tag-codemod");
 let cli = join(dirname(fileURLToPath(location)), "cli.js");
 
 const originalPackageJson = readFileSync("./package.json", "utf8");
-
-// TODO: error on missing package name
 
 let parsed = JSON.parse(originalPackageJson);
 parsed = {
@@ -39,6 +38,8 @@ let completedRun = false;
 try {
   await execa({ stdio: "inherit" })`pnpm install`;
 
+  const packageName = parsed.name || basename(cwd());
+
   await execa({
     stdout: function* (line) {
       console.log(line);
@@ -46,7 +47,7 @@ try {
         completedRun = true;
       }
     },
-    env: { FORCE_COLOR: true },
+    env: { FORCE_COLOR: true, PACKAGE_NAME: packageName },
   })`${cli}
       --relativeLocalPaths=false
       --nativeRouteTemplates=false

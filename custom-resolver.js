@@ -6,7 +6,7 @@ import floatKit from "./core-modules/float-kit.js";
 import selectKit from "./core-modules/select-kit.js";
 import truthHelpers from "./core-modules/truth-helpers.js";
 
-const pluginName = JSON.parse(readFileSync("./package.json")).name;
+const packageName = process.env.PACKAGE_NAME;
 
 function itemExists(path) {
   return (
@@ -32,9 +32,9 @@ function findItem(type, name) {
 
   // target plugin
   if (itemExists(`./assets/javascripts/discourse/${type}/${name}`)) {
-    return `discourse/plugins/${pluginName}/discourse/${type}/${name}`;
+    return `discourse/plugins/${packageName}/discourse/${type}/${name}`;
   } else if (itemExists(`./admin/assets/javascripts/admin/${type}/${name}`)) {
-    return `discourse/plugins/${pluginName}/admin/${type}/${name}`;
+    return `discourse/plugins/${packageName}/admin/${type}/${name}`;
   }
 }
 
