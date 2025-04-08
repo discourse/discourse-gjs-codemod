@@ -1,5 +1,5 @@
 {
-  "name": "discourse-plugin-gjs-codemod",
+  "name": "discourse-gjs-codemod",
   "version": "1.0.0",
   "description": "",
   "type": "module",
