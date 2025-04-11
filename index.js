@@ -59,7 +59,7 @@ try {
       --components=**/components/**/*.hbs
       --customResolver=${join(import.meta.dirname, "custom-resolver.js")}
       --renamingRules=${join(import.meta.dirname, "rules.js")}
-`;
+  `;
 } catch (error) {
   if (!completedRun) {
     console.error(error);
