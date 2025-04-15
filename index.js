@@ -60,10 +60,32 @@ try {
       --customResolver=${join(import.meta.dirname, "custom-resolver.js")}
       --renamingRules=${join(import.meta.dirname, "rules.js")}
   `;
-} catch (error) {
+
   if (!completedRun) {
-    console.error(error);
+    throw new Error("template-tag-codemod failed!");
   }
+
+  const files = (await execa`git status --porcelain`).stdout
+    .split("\n")
+    .map((line) => line.match(/^( M|\?\?) (.+\.gjs)$/)?.[2])
+    .filter(Boolean);
+
+  for (const name of files) {
+    let contents = readFileSync(name, "utf8");
+
+    if (/\bi18n0\b/.test(contents)) {
+      console.log(`replacing 'i18n0' in ${name}`);
+      contents = contents.replace(
+        /import i18n0 from ['"]discourse\/helpers\/i18n['"];/,
+        ""
+      );
+      contents = contents.replace(/\bi18n0\b/g, "i18n");
+      writeFileSync(name, contents);
+    }
+  }
+
+  await execa({ stdio: "inherit" })`pnpm eslint --fix`;
+  await execa({ stdio: "inherit" })`pnpm prettier --write **/*.{js,gjs}`;
 } finally {
   writeFileSync("./package.json", originalPackageJson);
   await execa({ stdio: "inherit" })`pnpm install`;
