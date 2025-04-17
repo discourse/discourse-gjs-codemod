@@ -33,12 +33,13 @@ parsed = {
 };
 
 writeFileSync("./package.json", JSON.stringify(parsed));
-let completedRun = false;
+let errors = [];
 
 try {
   await execa({ stdio: "inherit" })`pnpm install`;
 
   const packageName = parsed.name || basename(cwd());
+  let completedRun = false;
 
   await execa({
     stdout: function* (line) {
@@ -65,12 +66,12 @@ try {
     throw new Error("template-tag-codemod failed!");
   }
 
-  const files = (await execa`git status --porcelain`).stdout
+  const modifiedFiles = (await execa`git status --porcelain`).stdout
     .split("\n")
     .map((line) => line.match(/^( M|\?\?) (.+\.gjs)$/)?.[2])
     .filter(Boolean);
 
-  for (const name of files) {
+  for (const name of modifiedFiles) {
     let contents = readFileSync(name, "utf8");
 
     if (/\bi18n0\b/.test(contents)) {
@@ -82,6 +83,24 @@ try {
       contents = contents.replace(/\bi18n0\b/g, "i18n");
       writeFileSync(name, contents);
     }
+
+    if (contents.includes("RouteTemplate")) {
+      if (/\{\{action ["']([^"']+)["']\}\}/.test(contents)) {
+        console.log(`replacing string-based action in a route in ${name}`);
+        contents = contents.replace(
+          /\{\{action ["']([^"']+)["']\}\}/g,
+          "{{@controller.$1}}"
+        );
+      }
+
+      if (/\{\{action ["']([^"']+)["']/.test(contents)) {
+        errors.push(
+          `⚠️ please convert a string-based action in a route in ${name}`
+        );
+      }
+
+      writeFileSync(name, contents);
+    }
   }
 
   await execa({ stdio: "inherit" })`pnpm eslint --fix`;
@@ -89,4 +108,12 @@ try {
 } finally {
   writeFileSync("./package.json", originalPackageJson);
   await execa({ stdio: "inherit" })`pnpm install`;
+}
+
+if (errors.length > 0) {
+  for (const error of errors) {
+    console.error(error);
+  }
+
+  process.exit(1);
 }
