@@ -1,7 +1,7 @@
 import { basename, dirname, join } from "node:path";
 import { cwd } from "node:process";
 import { fileURLToPath } from "node:url";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { execa } from "execa";
 
 let location = import.meta.resolve("@embroider/template-tag-codemod");
@@ -33,6 +33,7 @@ parsed = {
 };
 
 writeFileSync("./package.json", JSON.stringify(parsed));
+mkdirSync("config", { recursive: true });
 let errors = [];
 
 try {

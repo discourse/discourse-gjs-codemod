@@ -43,6 +43,8 @@ function findItem(type, name) {
     return `discourse/plugins/${packageName}/discourse/${type}/${name}`;
   } else if (itemExists(`./admin/assets/javascripts/admin/${type}/${name}`)) {
     return `discourse/plugins/${packageName}/admin/${type}/${name}`;
+  } else if (itemExists(`./javascripts/discourse/${type}/${name}`)) {
+    return `_fake_theme/discourse/${type}/${name}`;
   }
 }
 
@@ -60,19 +62,26 @@ export default async function (path, filename) {
     result = findItem(type, name);
   }
 
+  if (!result) {
+    return;
+  }
+
   const sourceModulePath = filename
     .replace(
-      "assets/javascripts/discourse",
+      /^assets\/javascripts\/discourse/,
       `discourse/plugins/${packageName}/discourse`
     )
     .replace(
-      "admin/assets/javascripts/admin",
+      /^admin\/assets\/javascripts\/admin/,
       `discourse/plugins/${packageName}/admin`
-    );
+    )
+    .replace(/^javascripts\/discourse/, `_fake_theme/discourse`);
 
   if (
-    result.startsWith("discourse/plugins") &&
-    sourceModulePath.startsWith("discourse/plugins")
+    (result.startsWith("discourse/plugins") &&
+      sourceModulePath.startsWith("discourse/plugins")) ||
+    (result.startsWith("_fake_theme/") &&
+      sourceModulePath.startsWith("_fake_theme/"))
   ) {
     const relativePath = relative(dirname(sourceModulePath), result);
     result = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
