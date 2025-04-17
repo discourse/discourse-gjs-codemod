@@ -5,6 +5,7 @@ import dialogHolder from "./core-modules/dialog-holder.js";
 import floatKit from "./core-modules/float-kit.js";
 import selectKit from "./core-modules/select-kit.js";
 import truthHelpers from "./core-modules/truth-helpers.js";
+import { relative, dirname } from "node:path";
 
 const packageName = process.env.PACKAGE_NAME;
 const coreModules = [
@@ -45,16 +46,37 @@ function findItem(type, name) {
   }
 }
 
-export default async function (path) {
+export default async function (path, filename) {
   if (!path.startsWith("@embroider/virtual/")) {
     return;
   }
 
   const [, type, name] = path.match(/@embroider\/virtual\/(.+?)\/([^.]+)/);
 
+  let result;
   if (type === "ambiguous") {
-    return findItem("components", name) || findItem("helpers", name);
+    result = findItem("components", name) || findItem("helpers", name);
+  } else {
+    result = findItem(type, name);
   }
 
-  return findItem(type, name);
+  const sourceModulePath = filename
+    .replace(
+      "assets/javascripts/discourse",
+      `discourse/plugins/${packageName}/discourse`
+    )
+    .replace(
+      "admin/assets/javascripts/admin",
+      `discourse/plugins/${packageName}/admin`
+    );
+
+  if (
+    result.startsWith("discourse/plugins") &&
+    sourceModulePath.startsWith("discourse/plugins")
+  ) {
+    const relativePath = relative(dirname(sourceModulePath), result);
+    result = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
+  }
+
+  return result;
 }
