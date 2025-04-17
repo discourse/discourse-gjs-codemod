@@ -94,7 +94,7 @@ try {
         );
       }
 
-      if (/\{\{action ["']([^"']+)["']/.test(contents)) {
+      if (/\{\{action\b/.test(contents)) {
         errors.push(
           `⚠️ please convert a string-based action in a route in ${name}`
         );
