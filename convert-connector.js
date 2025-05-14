@@ -99,6 +99,7 @@ let output = transformSync(file, {
               @classNames(${cssClasses.map((c) => "'" + c + "'").join(", ")})
               class ${className} extends Component {}
             `();
+            path.replaceWithMultiple(newContents);
 
             // TODO: handle the actions object
 
@@ -174,8 +175,6 @@ let output = transformSync(file, {
                 );
               }
             }
-
-            path.replaceWithMultiple(newContents);
           },
         },
       },
