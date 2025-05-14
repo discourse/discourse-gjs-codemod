@@ -6,6 +6,13 @@ import connectorTagNames from "./connector-tag-names.js";
 import { classify } from "@ember/string";
 import { basename } from "node:path";
 
+if (process.argv.length !== 4) {
+  console.error(
+    "usage: node ./convert-connector.js [path-to-a-connector.js] [outlet-name]"
+  );
+  process.exit(1);
+}
+
 const fileName = process.argv[2];
 
 const file = readFileSync(fileName, "utf8");
