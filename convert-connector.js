@@ -80,6 +80,12 @@ let output = transformSync(file, {
               }
             }
 
+            const actions = declaration.properties.find(
+              (prop) =>
+                prop.key.name === "actions" &&
+                prop.value.type === "ObjectExpression"
+            );
+
             const newContents = template.default({
               plugins: ["decorators-legacy"],
             })`
@@ -144,6 +150,29 @@ let output = transformSync(file, {
                   t.blockStatement(newBody)
                 )
               );
+            }
+
+            if (actions) {
+              // TODO: prepend action import
+
+              for (const action of actions.value.properties) {
+                ClassDeclaration.body.body.push(
+                  t.classMethod(
+                    "method",
+                    t.identifier(action.key.name),
+                    action.params,
+                    action.body,
+                    false,
+                    false,
+                    false,
+                    action.async,
+                    null,
+                    null,
+                    null,
+                    [t.decorator(t.identifier("action"))]
+                  )
+                );
+              }
             }
 
             path.replaceWithMultiple(newContents);
