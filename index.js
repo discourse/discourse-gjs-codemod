@@ -95,7 +95,7 @@ try {
         );
       }
 
-      if (/\{\{action\b/.test(contents)) {
+      if (/\s(\{\{|\()action\b/.test(contents)) {
         errors.push(
           `⚠️ please convert a string-based action in a route in ${name}`
         );
