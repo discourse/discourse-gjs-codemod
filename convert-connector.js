@@ -99,9 +99,6 @@ let output = transformSync(file, {
               @classNames(${cssClasses.map((c) => "'" + c + "'").join(", ")})
               class ${className} extends Component {}
             `();
-            path.replaceWithMultiple(newContents);
-
-            // TODO: handle the actions object
 
             const ClassDeclaration = newContents.find(
               (node) => node.type === "ClassDeclaration"
@@ -154,7 +151,17 @@ let output = transformSync(file, {
             }
 
             if (actions) {
-              // TODO: prepend action import
+              newContents.unshift(
+                t.importDeclaration(
+                  [
+                    t.importSpecifier(
+                      t.identifier("action"),
+                      t.identifier("action")
+                    ),
+                  ],
+                  t.stringLiteral("@ember/object")
+                )
+              );
 
               for (const action of actions.value.properties) {
                 const method = t.classMethod(
@@ -173,6 +180,8 @@ let output = transformSync(file, {
                 ClassDeclaration.body.body.push(method);
               }
             }
+
+            path.replaceWithMultiple(newContents);
           },
         },
       },
