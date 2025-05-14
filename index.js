@@ -105,7 +105,9 @@ try {
   }
 
   await execa({ stdio: "inherit" })`pnpm eslint --fix`;
-  await execa({ stdio: "inherit" })`pnpm prettier --write **/*.{js,gjs}`;
+  await execa({
+    stdio: "inherit",
+  })`pnpm prettier --write **/*.{js,gjs} --no-error-on-unmatched-pattern`;
 } finally {
   writeFileSync("./package.json", originalPackageJson);
   await execa({ stdio: "inherit" })`pnpm install`;
