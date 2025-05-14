@@ -1,14 +1,14 @@
 import { globSync, readFileSync } from "node:fs";
-import discourse from "./core-modules/discourse.js";
-import admin from "./core-modules/admin.js";
-import dialogHolder from "./core-modules/dialog-holder.js";
-import floatKit from "./core-modules/float-kit.js";
-import selectKit from "./core-modules/select-kit.js";
-import truthHelpers from "./core-modules/truth-helpers.js";
+import discourse from "./modules/discourse.js";
+import admin from "./modules/admin.js";
+import dialogHolder from "./modules/dialog-holder.js";
+import floatKit from "./modules/float-kit.js";
+import selectKit from "./modules/select-kit.js";
+import truthHelpers from "./modules/truth-helpers.js";
 import { relative, dirname } from "node:path";
 
 const packageName = process.env.PACKAGE_NAME;
-const coreModules = [
+const modules = [
   discourse,
   admin,
   dialogHolder,
@@ -25,9 +25,9 @@ function itemExists(path) {
 }
 
 function findCoreModule(type, name) {
-  for (const mod of coreModules) {
-    if (mod[type][name]) {
-      return mod[type][name];
+  for (const mod of modules) {
+    if (mod[type]?.[name]) {
+      return mod[type]?.[name];
     }
   }
 }
