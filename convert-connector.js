@@ -157,22 +157,20 @@ let output = transformSync(file, {
               // TODO: prepend action import
 
               for (const action of actions.value.properties) {
-                ClassDeclaration.body.body.push(
-                  t.classMethod(
-                    "method",
-                    t.identifier(action.key.name),
-                    action.params,
-                    action.body,
-                    false,
-                    false,
-                    false,
-                    action.async,
-                    null,
-                    null,
-                    null,
-                    [t.decorator(t.identifier("action"))]
-                  )
+                const method = t.classMethod(
+                  "method",
+                  t.identifier(action.key.name),
+                  action.params,
+                  action.body,
+                  false,
+                  false,
+                  false,
+                  action.async
                 );
+
+                method.decorators = [t.decorator(t.identifier("action"))];
+
+                ClassDeclaration.body.body.push(method);
               }
             }
           },
