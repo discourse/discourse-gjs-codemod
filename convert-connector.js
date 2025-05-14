@@ -32,10 +32,7 @@ let output = transformSync(file, {
             const shouldRender = declaration.properties.find(
               (prop) => prop.key.name === "shouldRender"
             );
-            let shouldRenderBody = t.emptyStatement();
             if (shouldRender) {
-              shouldRenderBody = shouldRender.body.body;
-
               const secondParamName = shouldRender.params[1]?.name;
               if (secondParamName) {
                 path.scope.traverse(shouldRender, {
@@ -51,10 +48,7 @@ let output = transformSync(file, {
             const setupComponent = declaration.properties.find(
               (prop) => prop.key.name === "setupComponent"
             );
-            let setupComponentBody = t.emptyStatement();
             if (setupComponent) {
-              setupComponentBody = setupComponent.body.body;
-
               const firstParamName = setupComponent.params[0]?.name;
               const secondParamName = setupComponent.params[1]?.name;
 
@@ -79,7 +73,7 @@ let output = transformSync(file, {
               }
             }
 
-            const classDeclaration = template.default({
+            const newContents = template.default({
               plugins: ["decorators-legacy"],
             })`
               import Component from "@ember/component";
@@ -90,20 +84,50 @@ let output = transformSync(file, {
 
               @tagName("${tagName}")
               @classNames(${cssClasses.map((c) => "'" + c + "'").join(", ")})
-              class ${className} extends Component {
-                static shouldRender(args, context) {
-                  ${shouldRenderBody}
-                }
-
-                init() {
-                  super.init(...arguments);
-
-                  ${setupComponentBody}
-                }
-              }
+              class ${className} extends Component {}
             `();
 
-            path.replaceWithMultiple(classDeclaration);
+            // TODO: handle the actions object
+            // TODO: handle the third shouldRender arg: owner
+            // TODO: handle arg destructuring, e.g. setupComponent({ model }, component) {
+
+            const ClassDeclaration = newContents.find(
+              (node) => node.type === "ClassDeclaration"
+            );
+
+            if (shouldRender) {
+              ClassDeclaration.body.body.push(
+                t.classMethod(
+                  "method",
+                  t.identifier("shouldRender"),
+                  shouldRender.params,
+                  t.blockStatement(shouldRender.body.body),
+                  false,
+                  true
+                )
+              );
+            }
+
+            if (setupComponent) {
+              ClassDeclaration.body.body.push(
+                t.classMethod(
+                  "method",
+                  t.identifier("init"),
+                  [],
+                  t.blockStatement([
+                    t.expressionStatement(
+                      t.callExpression(
+                        t.memberExpression(t.super(), t.identifier("init")),
+                        [t.spreadElement(t.identifier("arguments"))]
+                      )
+                    ),
+                    ...setupComponent.body.body,
+                  ])
+                )
+              );
+            }
+
+            path.replaceWithMultiple(newContents);
           },
         },
       },
