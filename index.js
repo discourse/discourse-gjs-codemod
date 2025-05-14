@@ -39,7 +39,8 @@ let errors = [];
 try {
   await execa({ stdio: "inherit" })`pnpm install`;
 
-  const packageName = parsed.name || basename(cwd());
+  const packageName =
+    process.env.PACKAGE_NAME || parsed.name || basename(cwd());
   let completedRun = false;
 
   await execa({
