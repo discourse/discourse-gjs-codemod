@@ -95,7 +95,6 @@ let output = transformSync(file, {
             `();
 
             // TODO: handle the actions object
-            // TODO: handle the third shouldRender arg: owner
             // TODO: handle arg destructuring, e.g. setupComponent({ model }, component) {
 
             const ClassDeclaration = newContents.find(
