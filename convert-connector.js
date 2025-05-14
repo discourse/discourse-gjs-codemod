@@ -95,7 +95,6 @@ let output = transformSync(file, {
             `();
 
             // TODO: handle the actions object
-            // TODO: handle arg destructuring, e.g. setupComponent({ model }, component) {
 
             const ClassDeclaration = newContents.find(
               (node) => node.type === "ClassDeclaration"
@@ -115,20 +114,34 @@ let output = transformSync(file, {
             }
 
             if (setupComponent) {
+              const newBody = [
+                t.expressionStatement(
+                  t.callExpression(
+                    t.memberExpression(t.super(), t.identifier("init")),
+                    [t.spreadElement(t.identifier("arguments"))]
+                  )
+                ),
+              ];
+
+              if (setupComponent.params[0]?.type === "ObjectPattern") {
+                newBody.push(
+                  t.variableDeclaration("const", [
+                    t.variableDeclarator(
+                      setupComponent.params[0],
+                      t.thisExpression()
+                    ),
+                  ])
+                );
+              }
+
+              newBody.push(...setupComponent.body.body);
+
               ClassDeclaration.body.body.push(
                 t.classMethod(
                   "method",
                   t.identifier("init"),
                   [],
-                  t.blockStatement([
-                    t.expressionStatement(
-                      t.callExpression(
-                        t.memberExpression(t.super(), t.identifier("init")),
-                        [t.spreadElement(t.identifier("arguments"))]
-                      )
-                    ),
-                    ...setupComponent.body.body,
-                  ])
+                  t.blockStatement(newBody)
                 )
               );
             }
