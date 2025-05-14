@@ -5,6 +5,7 @@ import dialogHolder from "./modules/dialog-holder.js";
 import floatKit from "./modules/float-kit.js";
 import selectKit from "./modules/select-kit.js";
 import truthHelpers from "./modules/truth-helpers.js";
+import renderModifiers from "./modules/render-modifiers.js";
 import { relative, dirname } from "node:path";
 
 const packageName = process.env.PACKAGE_NAME;
@@ -15,6 +16,7 @@ const modules = [
   floatKit,
   selectKit,
   truthHelpers,
+  renderModifiers,
 ];
 
 function itemExists(path) {
