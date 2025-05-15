@@ -44,7 +44,7 @@ let output = transformSync(file, {
               if (secondParamName) {
                 path.scope.traverse(shouldRender, {
                   Identifier(innerPath) {
-                    if (innerPath.node.name === "component") {
+                    if (innerPath.node.name === secondParamName) {
                       innerPath.node.name = "context";
                     }
                   },
