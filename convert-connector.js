@@ -80,6 +80,23 @@ let output = transformSync(file, {
               }
             }
 
+            const teardownComponent = declaration.properties.find(
+              (prop) => prop.key.name === "teardownComponent"
+            );
+            if (teardownComponent) {
+              const firstParamName = teardownComponent.params[0]?.name;
+
+              if (firstParamName) {
+                path.scope.traverse(teardownComponent, {
+                  Identifier(innerPath) {
+                    if (innerPath.node.name === firstParamName) {
+                      innerPath.node.name = "this";
+                    }
+                  },
+                });
+              }
+            }
+
             const actions = declaration.properties.find(
               (prop) =>
                 prop.key.name === "actions" &&
@@ -144,6 +161,39 @@ let output = transformSync(file, {
                 t.classMethod(
                   "method",
                   t.identifier("init"),
+                  [],
+                  t.blockStatement(newBody)
+                )
+              );
+            }
+
+            if (teardownComponent) {
+              const newBody = [
+                t.expressionStatement(
+                  t.callExpression(
+                    t.memberExpression(t.super(), t.identifier("willDestroy")),
+                    [t.spreadElement(t.identifier("arguments"))]
+                  )
+                ),
+              ];
+
+              if (teardownComponent.params[0]?.type === "ObjectPattern") {
+                newBody.push(
+                  t.variableDeclaration("const", [
+                    t.variableDeclarator(
+                      teardownComponent.params[0],
+                      t.thisExpression()
+                    ),
+                  ])
+                );
+              }
+
+              newBody.push(...teardownComponent.body.body);
+
+              ClassDeclaration.body.body.push(
+                t.classMethod(
+                  "method",
+                  t.identifier("willDestroy"),
                   [],
                   t.blockStatement(newBody)
                 )
