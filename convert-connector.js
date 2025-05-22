@@ -5,10 +5,11 @@ import * as t from "@babel/types";
 import connectorTagNames from "./connector-tag-names.js";
 import { classify } from "@ember/string";
 import { basename } from "node:path";
+import { env } from "node:process";
 
-class Converter {
-  constructor(filename, outletName) {
-    this.file = readFileSync(filename, "utf8");
+export default class Converter {
+  constructor(file, filename, outletName) {
+    this.file = file;
 
     const connectorName = basename(filename, ".js");
     this.cssClasses = [`${outletName}-outlet`, connectorName];
@@ -102,12 +103,6 @@ class Converter {
                   }
                 );
 
-                const actions = this.declaration.properties.find(
-                  (prop) =>
-                    prop.key.name === "actions" &&
-                    prop.value.type === "ObjectExpression"
-                );
-
                 if (shouldRender) {
                   classDeclaration.body.body.push(
                     t.classMethod(
@@ -190,6 +185,12 @@ class Converter {
                   );
                 }
 
+                const actions = this.declaration.properties.find(
+                  (prop) =>
+                    prop.key.name === "actions" &&
+                    prop.value.type === "ObjectExpression"
+                );
+
                 if (actions) {
                   this.newContents.unshift(
                     t.importDeclaration(
@@ -234,15 +235,18 @@ class Converter {
       `export default class ${this.className}`
     );
 
-    console.log(output);
+    return output;
   }
 }
 
-if (process.argv.length !== 4) {
-  console.error(
-    "usage: node ./convert-connector.js [path-to-a-connector.js] [outlet-name]"
-  );
-  process.exit(1);
-}
+if (!process.env.NODE_TEST_CONTEXT) {
+  if (process.argv.length !== 4) {
+    console.error(
+      "usage: node ./convert-connector.js [path-to-a-connector.js] [outlet-name]"
+    );
+    process.exit(1);
+  }
 
-new Converter(process.argv[2], process.argv[3]).run();
+  const file = readFileSync(process.argv[2], "utf8");
+  console.log(new Converter(file, process.argv[2], process.argv[3]).run());
+}
