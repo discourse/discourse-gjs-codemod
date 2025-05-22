@@ -68,6 +68,14 @@ export default class Converter {
     );
   }
 
+  handleDestructuring(param) {
+    if (param?.type === "ObjectPattern") {
+      return t.variableDeclaration("const", [
+        t.variableDeclarator(param, t.thisExpression()),
+      ]);
+    }
+  }
+
   run() {
     let output = transformSync(this.file, {
       plugins: [
@@ -125,20 +133,11 @@ export default class Converter {
                 }
 
                 if (setupComponent) {
-                  const newBody = [this.callSuper("init")];
-
-                  if (setupComponent.params[0]?.type === "ObjectPattern") {
-                    newBody.push(
-                      t.variableDeclaration("const", [
-                        t.variableDeclarator(
-                          setupComponent.params[0],
-                          t.thisExpression()
-                        ),
-                      ])
-                    );
-                  }
-
-                  newBody.push(...setupComponent.body.body);
+                  const newBody = [
+                    this.callSuper("init"),
+                    this.handleDestructuring(setupComponent.params[0]),
+                    ...setupComponent.body.body,
+                  ].filter(Boolean);
 
                   classDeclaration.body.body.push(
                     t.classMethod(
@@ -151,20 +150,11 @@ export default class Converter {
                 }
 
                 if (teardownComponent) {
-                  const newBody = [this.callSuper("willDestroy")];
-
-                  if (teardownComponent.params[0]?.type === "ObjectPattern") {
-                    newBody.push(
-                      t.variableDeclaration("const", [
-                        t.variableDeclarator(
-                          teardownComponent.params[0],
-                          t.thisExpression()
-                        ),
-                      ])
-                    );
-                  }
-
-                  newBody.push(...teardownComponent.body.body);
+                  const newBody = [
+                    this.callSuper("willDestroy"),
+                    this.handleDestructuring(teardownComponent.params[0]),
+                    ...teardownComponent.body.body,
+                  ].filter(Boolean);
 
                   classDeclaration.body.body.push(
                     t.classMethod(
