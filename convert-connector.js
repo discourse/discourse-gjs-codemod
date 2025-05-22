@@ -6,6 +6,238 @@ import connectorTagNames from "./connector-tag-names.js";
 import { classify } from "@ember/string";
 import { basename } from "node:path";
 
+class Converter {
+  constructor(filename, outletName) {
+    this.file = readFileSync(filename, "utf8");
+
+    const connectorName = basename(filename, ".js");
+    this.cssClasses = [`${outletName}-outlet`, connectorName];
+    this.className = classify(connectorName);
+    this.tagName = connectorTagNames[outletName];
+  }
+
+  createNewClass() {
+    this.newContents = template.default({
+      plugins: ["decorators-legacy"],
+    })`
+      import Component from "@ember/component";
+      import {
+        classNames,
+        tagName,
+      } from "@ember-decorators/component";
+
+      @tagName("${this.tagName}")
+      @classNames(${this.cssClasses.map((c) => "'" + c + "'").join(", ")})
+      class ${this.className} extends Component {}
+    `();
+
+    return this.newContents.find((node) => node.type === "ClassDeclaration");
+  }
+
+  extractMethod(name, callback) {
+    const method = this.declaration.properties.find(
+      (prop) => prop.key.name === name
+    );
+
+    if (method) {
+      callback(method);
+      return method;
+    }
+  }
+
+  rename(path, method, identifier, replacement) {
+    if (!identifier) {
+      return;
+    }
+
+    path.scope.traverse(method, {
+      Identifier(innerPath) {
+        if (innerPath.node.name === identifier) {
+          innerPath.node.name = replacement;
+        }
+      },
+    });
+  }
+
+  run() {
+    let output = transformSync(this.file, {
+      plugins: [
+        [
+          {
+            visitor: {
+              ExportDefaultDeclaration: (path) => {
+                this.declaration = path.node.declaration;
+
+                if (this.declaration.type !== "ObjectExpression") {
+                  console.log("not a legacy connector");
+                  return;
+                }
+
+                const classDeclaration = this.createNewClass();
+
+                const shouldRender = this.extractMethod(
+                  "shouldRender",
+                  (method) => {
+                    this.rename(
+                      path,
+                      method,
+                      method.params[0]?.name,
+                      "context"
+                    );
+                  }
+                );
+
+                const setupComponent = this.extractMethod(
+                  "setupComponent",
+                  (method) => {
+                    this.rename(path, method, method.params[0]?.name, "this");
+                    this.rename(path, method, method.params[1]?.name, "this");
+                  }
+                );
+
+                const teardownComponent = this.extractMethod(
+                  "teardownComponent",
+                  (method) => {
+                    this.rename(path, method, method.params[0]?.name, "this");
+                  }
+                );
+
+                const actions = this.declaration.properties.find(
+                  (prop) =>
+                    prop.key.name === "actions" &&
+                    prop.value.type === "ObjectExpression"
+                );
+
+                if (shouldRender) {
+                  classDeclaration.body.body.push(
+                    t.classMethod(
+                      "method",
+                      t.identifier("shouldRender"),
+                      shouldRender.params,
+                      t.blockStatement(shouldRender.body.body),
+                      false,
+                      true
+                    )
+                  );
+                }
+
+                if (setupComponent) {
+                  const newBody = [
+                    t.expressionStatement(
+                      t.callExpression(
+                        t.memberExpression(t.super(), t.identifier("init")),
+                        [t.spreadElement(t.identifier("arguments"))]
+                      )
+                    ),
+                  ];
+
+                  if (setupComponent.params[0]?.type === "ObjectPattern") {
+                    newBody.push(
+                      t.variableDeclaration("const", [
+                        t.variableDeclarator(
+                          setupComponent.params[0],
+                          t.thisExpression()
+                        ),
+                      ])
+                    );
+                  }
+
+                  newBody.push(...setupComponent.body.body);
+
+                  classDeclaration.body.body.push(
+                    t.classMethod(
+                      "method",
+                      t.identifier("init"),
+                      [],
+                      t.blockStatement(newBody)
+                    )
+                  );
+                }
+
+                if (teardownComponent) {
+                  const newBody = [
+                    t.expressionStatement(
+                      t.callExpression(
+                        t.memberExpression(
+                          t.super(),
+                          t.identifier("willDestroy")
+                        ),
+                        [t.spreadElement(t.identifier("arguments"))]
+                      )
+                    ),
+                  ];
+
+                  if (teardownComponent.params[0]?.type === "ObjectPattern") {
+                    newBody.push(
+                      t.variableDeclaration("const", [
+                        t.variableDeclarator(
+                          teardownComponent.params[0],
+                          t.thisExpression()
+                        ),
+                      ])
+                    );
+                  }
+
+                  newBody.push(...teardownComponent.body.body);
+
+                  classDeclaration.body.body.push(
+                    t.classMethod(
+                      "method",
+                      t.identifier("willDestroy"),
+                      [],
+                      t.blockStatement(newBody)
+                    )
+                  );
+                }
+
+                if (actions) {
+                  this.newContents.unshift(
+                    t.importDeclaration(
+                      [
+                        t.importSpecifier(
+                          t.identifier("action"),
+                          t.identifier("action")
+                        ),
+                      ],
+                      t.stringLiteral("@ember/object")
+                    )
+                  );
+
+                  for (const action of actions.value.properties) {
+                    const method = t.classMethod(
+                      "method",
+                      t.identifier(action.key.name),
+                      action.params,
+                      action.body,
+                      false,
+                      false,
+                      false,
+                      action.async
+                    );
+
+                    method.decorators = [t.decorator(t.identifier("action"))];
+
+                    classDeclaration.body.body.push(method);
+                  }
+                }
+
+                path.replaceWithMultiple(this.newContents);
+              },
+            },
+          },
+        ],
+      ],
+    }).code;
+
+    output = output.replace(
+      `class ${this.className}`,
+      `export default class ${this.className}`
+    );
+
+    console.log(output);
+  }
+}
+
 if (process.argv.length !== 4) {
   console.error(
     "usage: node ./convert-connector.js [path-to-a-connector.js] [outlet-name]"
@@ -13,235 +245,4 @@ if (process.argv.length !== 4) {
   process.exit(1);
 }
 
-const fileName = process.argv[2];
-
-const file = readFileSync(fileName, "utf8");
-const outletName = process.argv[3];
-const connectorName = basename(fileName, ".js");
-
-const tagName = connectorTagNames[outletName];
-const cssClasses = [`${outletName}-outlet`, connectorName];
-const className = classify(connectorName);
-
-let output = transformSync(file, {
-  plugins: [
-    [
-      {
-        visitor: {
-          ExportDefaultDeclaration(path) {
-            const declaration = path.node.declaration;
-
-            if (declaration.type !== "ObjectExpression") {
-              console.log("not an old connector");
-              return;
-            }
-
-            const shouldRender = declaration.properties.find(
-              (prop) => prop.key.name === "shouldRender"
-            );
-            if (shouldRender) {
-              const secondParamName = shouldRender.params[1]?.name;
-              if (secondParamName) {
-                path.scope.traverse(shouldRender, {
-                  Identifier(innerPath) {
-                    if (innerPath.node.name === secondParamName) {
-                      innerPath.node.name = "context";
-                    }
-                  },
-                });
-              }
-            }
-
-            const setupComponent = declaration.properties.find(
-              (prop) => prop.key.name === "setupComponent"
-            );
-            if (setupComponent) {
-              const firstParamName = setupComponent.params[0]?.name;
-              const secondParamName = setupComponent.params[1]?.name;
-
-              if (firstParamName) {
-                path.scope.traverse(setupComponent, {
-                  Identifier(innerPath) {
-                    if (innerPath.node.name === firstParamName) {
-                      innerPath.node.name = "this";
-                    }
-                  },
-                });
-              }
-
-              if (secondParamName) {
-                path.scope.traverse(setupComponent, {
-                  Identifier(innerPath) {
-                    if (innerPath.node.name === secondParamName) {
-                      innerPath.node.name = "this";
-                    }
-                  },
-                });
-              }
-            }
-
-            const teardownComponent = declaration.properties.find(
-              (prop) => prop.key.name === "teardownComponent"
-            );
-            if (teardownComponent) {
-              const firstParamName = teardownComponent.params[0]?.name;
-
-              if (firstParamName) {
-                path.scope.traverse(teardownComponent, {
-                  Identifier(innerPath) {
-                    if (innerPath.node.name === firstParamName) {
-                      innerPath.node.name = "this";
-                    }
-                  },
-                });
-              }
-            }
-
-            const actions = declaration.properties.find(
-              (prop) =>
-                prop.key.name === "actions" &&
-                prop.value.type === "ObjectExpression"
-            );
-
-            const newContents = template.default({
-              plugins: ["decorators-legacy"],
-            })`
-              import Component from "@ember/component";
-              import {
-                classNames,
-                tagName,
-              } from "@ember-decorators/component";
-
-              @tagName("${tagName}")
-              @classNames(${cssClasses.map((c) => "'" + c + "'").join(", ")})
-              class ${className} extends Component {}
-            `();
-
-            const ClassDeclaration = newContents.find(
-              (node) => node.type === "ClassDeclaration"
-            );
-
-            if (shouldRender) {
-              ClassDeclaration.body.body.push(
-                t.classMethod(
-                  "method",
-                  t.identifier("shouldRender"),
-                  shouldRender.params,
-                  t.blockStatement(shouldRender.body.body),
-                  false,
-                  true
-                )
-              );
-            }
-
-            if (setupComponent) {
-              const newBody = [
-                t.expressionStatement(
-                  t.callExpression(
-                    t.memberExpression(t.super(), t.identifier("init")),
-                    [t.spreadElement(t.identifier("arguments"))]
-                  )
-                ),
-              ];
-
-              if (setupComponent.params[0]?.type === "ObjectPattern") {
-                newBody.push(
-                  t.variableDeclaration("const", [
-                    t.variableDeclarator(
-                      setupComponent.params[0],
-                      t.thisExpression()
-                    ),
-                  ])
-                );
-              }
-
-              newBody.push(...setupComponent.body.body);
-
-              ClassDeclaration.body.body.push(
-                t.classMethod(
-                  "method",
-                  t.identifier("init"),
-                  [],
-                  t.blockStatement(newBody)
-                )
-              );
-            }
-
-            if (teardownComponent) {
-              const newBody = [
-                t.expressionStatement(
-                  t.callExpression(
-                    t.memberExpression(t.super(), t.identifier("willDestroy")),
-                    [t.spreadElement(t.identifier("arguments"))]
-                  )
-                ),
-              ];
-
-              if (teardownComponent.params[0]?.type === "ObjectPattern") {
-                newBody.push(
-                  t.variableDeclaration("const", [
-                    t.variableDeclarator(
-                      teardownComponent.params[0],
-                      t.thisExpression()
-                    ),
-                  ])
-                );
-              }
-
-              newBody.push(...teardownComponent.body.body);
-
-              ClassDeclaration.body.body.push(
-                t.classMethod(
-                  "method",
-                  t.identifier("willDestroy"),
-                  [],
-                  t.blockStatement(newBody)
-                )
-              );
-            }
-
-            if (actions) {
-              newContents.unshift(
-                t.importDeclaration(
-                  [
-                    t.importSpecifier(
-                      t.identifier("action"),
-                      t.identifier("action")
-                    ),
-                  ],
-                  t.stringLiteral("@ember/object")
-                )
-              );
-
-              for (const action of actions.value.properties) {
-                const method = t.classMethod(
-                  "method",
-                  t.identifier(action.key.name),
-                  action.params,
-                  action.body,
-                  false,
-                  false,
-                  false,
-                  action.async
-                );
-
-                method.decorators = [t.decorator(t.identifier("action"))];
-
-                ClassDeclaration.body.body.push(method);
-              }
-            }
-
-            path.replaceWithMultiple(newContents);
-          },
-        },
-      },
-    ],
-  ],
-}).code;
-
-output = output.replace(
-  `class ${className}`,
-  `export default class ${className}`
-);
-
-console.log(output);
+new Converter(process.argv[2], process.argv[3]).run();
