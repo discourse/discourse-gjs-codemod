@@ -60,6 +60,14 @@ export default class Converter {
     });
   }
 
+  callSuper(name) {
+    return t.expressionStatement(
+      t.callExpression(t.memberExpression(t.super(), t.identifier(name)), [
+        t.spreadElement(t.identifier("arguments")),
+      ])
+    );
+  }
+
   run() {
     let output = transformSync(this.file, {
       plugins: [
@@ -117,14 +125,7 @@ export default class Converter {
                 }
 
                 if (setupComponent) {
-                  const newBody = [
-                    t.expressionStatement(
-                      t.callExpression(
-                        t.memberExpression(t.super(), t.identifier("init")),
-                        [t.spreadElement(t.identifier("arguments"))]
-                      )
-                    ),
-                  ];
+                  const newBody = [this.callSuper("init")];
 
                   if (setupComponent.params[0]?.type === "ObjectPattern") {
                     newBody.push(
@@ -150,17 +151,7 @@ export default class Converter {
                 }
 
                 if (teardownComponent) {
-                  const newBody = [
-                    t.expressionStatement(
-                      t.callExpression(
-                        t.memberExpression(
-                          t.super(),
-                          t.identifier("willDestroy")
-                        ),
-                        [t.spreadElement(t.identifier("arguments"))]
-                      )
-                    ),
-                  ];
+                  const newBody = [this.callSuper("willDestroy")];
 
                   if (teardownComponent.params[0]?.type === "ObjectPattern") {
                     newBody.push(
@@ -230,12 +221,10 @@ export default class Converter {
       ],
     }).code;
 
-    output = output.replace(
+    return output.replace(
       `class ${this.className}`,
       `export default class ${this.className}`
     );
-
-    return output;
   }
 }
 
