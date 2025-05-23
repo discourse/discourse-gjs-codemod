@@ -14,7 +14,12 @@ export default class Converter {
     const connectorName = basename(filename, ".js");
     this.cssClasses = [`${outletName}-outlet`, connectorName];
     this.className = classify(connectorName);
-    this.tagName = connectorTagNames[outletName];
+
+    if (connectorTagNames[outletName]) {
+      this.tagName = connectorTagNames[outletName];
+    } else {
+      throw new Error(`🚨🚨🚨 Unknown plugin outlet: ${outletName}`);
+    }
   }
 
   createNewClass() {
@@ -218,14 +223,14 @@ export default class Converter {
   }
 }
 
-if (!process.env.NODE_TEST_CONTEXT) {
-  if (process.argv.length !== 4) {
-    console.error(
-      "usage: node ./convert-connector.js [path-to-a-connector.js] [outlet-name]"
-    );
-    process.exit(1);
-  }
+// if (!process.env.NODE_TEST_CONTEXT) {
+//   if (process.argv.length !== 4) {
+//     console.error(
+//       "usage: node ./convert-connector.js [path-to-a-connector.js] [outlet-name]"
+//     );
+//     process.exit(1);
+//   }
 
-  const file = readFileSync(process.argv[2], "utf8");
-  console.log(new Converter(file, process.argv[2], process.argv[3]).run());
-}
+//   const file = readFileSync(process.argv[2], "utf8");
+//   console.log(new Converter(file, process.argv[2], process.argv[3]).run());
+// }

@@ -1,10 +1,27 @@
 import { basename, dirname, join } from "node:path";
 import { cwd, env, exit } from "node:process";
 import { fileURLToPath } from "node:url";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { globSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { execa } from "execa";
+import Converter from "./convert-connector.js";
 
-const originalPackageJson = readFileSync("./package.json", "utf8");
+const defaultGlimmerOutlets = [
+  "conditional-loading-spinner",
+  "fast-edit-footer-after",
+  "google-search",
+  "group-info-details",
+  "post-text-buttons",
+  "discovery-list-area",
+  "topic-map-expanded-after",
+  "chat-join-channel-button",
+];
+
+const templateOnlyJs = `
+import templateOnly from "@ember/component/template-only";
+export default templateOnly();
+`.trim();
+
+const originalPackageJson = readFileSync("package.json", "utf8");
 let parsed = JSON.parse(originalPackageJson);
 const packageName = env.PACKAGE_NAME || parsed.name || basename(cwd());
 
@@ -18,7 +35,59 @@ if (result.exitCode === 0) {
   exit(1);
 }
 
-async function runTemplateTagCodemod() {
+// For each unique "{outletName}-{connectorName}" in **/connectors/{*outletName}/{*connectorName}.{js,hbs}
+// - if it's only an hbs and is on THE GLIMMER LIST (TODO): skip
+// - if it's only an hbs and isn't on the list: add a boilerplate templateOnly js file
+// - if it's a combo or just js: check for the legacy connector indicators
+//   - if it's a legacy connector - run the converter
+//   - otherwise: skip
+//
+// using the list - run the template tag codemod as if those files were components
+
+const files = globSync("{assets,javascripts}/**/connectors/**/*.{js,hbs}");
+const connectors = new Map();
+for (const file of files) {
+  const [, path, outletName, connectorName, extension] = file.match(
+    /^(.+\/connectors)\/([^\/]+)\/([^\.]+)\.(js|hbs)$/
+  );
+
+  const key = `${path}/${outletName}/${connectorName}`;
+  if (connectors.has(key)) {
+    const connector = connectors.get(key);
+    connector.extensions.push(extension);
+  } else {
+    connectors.set(key, { outletName, connectorName, extensions: [extension] });
+  }
+}
+
+console.log("Found connectors:\n");
+for (const [path, { outletName, connectorName, extensions }] of connectors) {
+  console.log(outletName, connectorName);
+
+  if (extensions.length === 1 && extensions[0] === "hbs") {
+    if (defaultGlimmerOutlets.includes(outletName)) {
+      console.log(`${connectorName} is a 'defaultGlimmer' connector`);
+    } else {
+      writeFileSync(`./${path}.js`, templateOnlyJs);
+    }
+  } else {
+    const filename = `${path}.js`;
+    const file = readFileSync(filename, "utf8");
+    const isLegacy = file.includes("export default {");
+    if (isLegacy) {
+      const converter = new Converter(file, filename, outletName);
+      const output = converter.run();
+      writeFileSync(filename, output);
+    }
+  }
+}
+exit(0);
+
+async function runTemplateTagCodemod({
+  renderTests,
+  routeTemplates,
+  components,
+}) {
   const location = import.meta.resolve("@embroider/template-tag-codemod");
   const cli = join(dirname(fileURLToPath(location)), "cli.js");
   let completedRun = false;
@@ -37,9 +106,9 @@ async function runTemplateTagCodemod() {
       --nativeLexicalThis=false
       --templateInsertion=end
       --addNameToTemplateOnly
-      --renderTests=test/**/*.js
-      --routeTemplates=**/templates/**/*.hbs
-      --components=**/components/**/*.hbs
+      ${renderTests ? `--renderTests=${renderTests}` : ""}
+      ${routeTemplates ? `--routeTemplates=${routeTemplates}` : ""}
+      ${components ? `--components=${components}` : ""}
       --customResolver=${join(import.meta.dirname, "custom-resolver.js")}
       --renamingRules=${join(import.meta.dirname, "rules.js")}
   `;
@@ -71,24 +140,22 @@ parsed = {
   },
 };
 
-writeFileSync("./package.json", JSON.stringify(parsed));
+writeFileSync("package.json", JSON.stringify(parsed));
 mkdirSync("config", { recursive: true });
 let errors = [];
 
 try {
   await execa({ stdio: "inherit" })`pnpm install`;
 
-  //
-  // For each unique "{outletName}-{connectorName}" in **/connectors/{*outletName}/{*connectorName}.{js,hbs}
-  // - if it's only an hbs and is on THE GLIMMER LIST (TODO): skip
-  // - if it's only an hbs and isn't on the list: add a boilerplate templateOnly js file
-  // - if it's a combo or just js: check for the legacy connector indicators
-  //   - if it's a legacy connector - run the converter
-  //   - otherwise: skip
-  //
-  // using the list - run the template tag codemod as if those files were components
+  runTemplateTagCodemod({ components: "**/connectors/**/*.hbs" });
 
-  runTemplateTagCodemod();
+  exit(0);
+
+  runTemplateTagCodemod({
+    renderTests: "test/**/*.js",
+    routeTemplates: "**/templates/**/*.hbs",
+    components: "**/components/**/*.hbs",
+  });
 
   const modifiedFiles = (await execa`git status --porcelain`).stdout
     .split("\n")
