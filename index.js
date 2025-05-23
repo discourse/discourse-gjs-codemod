@@ -1,15 +1,54 @@
 import { basename, dirname, join } from "node:path";
-import { cwd } from "node:process";
+import { cwd, env, exit } from "node:process";
 import { fileURLToPath } from "node:url";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { execa } from "execa";
 
-let location = import.meta.resolve("@embroider/template-tag-codemod");
-let cli = join(dirname(fileURLToPath(location)), "cli.js");
-
 const originalPackageJson = readFileSync("./package.json", "utf8");
-
 let parsed = JSON.parse(originalPackageJson);
+const packageName = env.PACKAGE_NAME || parsed.name || basename(cwd());
+
+// First, search for the deprecated api method and bail if found
+const result = await execa({
+  reject: false,
+})`grep --include=*.js --include=*.gjs -r javascripts -r assets -e registerConnectorClass`;
+if (result.exitCode === 0) {
+  console.error("Found uses of 'registerConnectorClass'. Fix those first:");
+  console.error(result.stdout);
+  exit(1);
+}
+
+async function runTemplateTagCodemod() {
+  const location = import.meta.resolve("@embroider/template-tag-codemod");
+  const cli = join(dirname(fileURLToPath(location)), "cli.js");
+  let completedRun = false;
+
+  await execa({
+    stdout: function* (line) {
+      console.log(line);
+      if (line.includes("Completed run")) {
+        completedRun = true;
+      }
+    },
+    env: { FORCE_COLOR: true, PACKAGE_NAME: packageName },
+  })`${cli}
+      --relativeLocalPaths=false
+      --nativeRouteTemplates=false
+      --nativeLexicalThis=false
+      --templateInsertion=end
+      --addNameToTemplateOnly
+      --renderTests=test/**/*.js
+      --routeTemplates=**/templates/**/*.hbs
+      --components=**/components/**/*.hbs
+      --customResolver=${join(import.meta.dirname, "custom-resolver.js")}
+      --renamingRules=${join(import.meta.dirname, "rules.js")}
+  `;
+
+  if (!completedRun) {
+    throw new Error("template-tag-codemod failed!");
+  }
+}
+
 parsed = {
   ...parsed,
   dependencies: {
@@ -39,34 +78,17 @@ let errors = [];
 try {
   await execa({ stdio: "inherit" })`pnpm install`;
 
-  const packageName =
-    process.env.PACKAGE_NAME || parsed.name || basename(cwd());
-  let completedRun = false;
+  //
+  // For each unique "{outletName}-{connectorName}" in **/connectors/{*outletName}/{*connectorName}.{js,hbs}
+  // - if it's only an hbs and is on THE GLIMMER LIST (TODO): skip
+  // - if it's only an hbs and isn't on the list: add a boilerplate templateOnly js file
+  // - if it's a combo or just js: check for the legacy connector indicators
+  //   - if it's a legacy connector - run the converter
+  //   - otherwise: skip
+  //
+  // using the list - run the template tag codemod as if those files were components
 
-  await execa({
-    stdout: function* (line) {
-      console.log(line);
-      if (line.includes("Completed run")) {
-        completedRun = true;
-      }
-    },
-    env: { FORCE_COLOR: true, PACKAGE_NAME: packageName },
-  })`${cli}
-      --relativeLocalPaths=false
-      --nativeRouteTemplates=false
-      --nativeLexicalThis=false
-      --templateInsertion=end
-      --addNameToTemplateOnly
-      --renderTests=test/**/*.js
-      --routeTemplates=**/templates/**/*.hbs
-      --components=**/components/**/*.hbs
-      --customResolver=${join(import.meta.dirname, "custom-resolver.js")}
-      --renamingRules=${join(import.meta.dirname, "rules.js")}
-  `;
-
-  if (!completedRun) {
-    throw new Error("template-tag-codemod failed!");
-  }
+  runTemplateTagCodemod();
 
   const modifiedFiles = (await execa`git status --porcelain`).stdout
     .split("\n")
@@ -119,5 +141,5 @@ if (errors.length > 0) {
     console.error(error);
   }
 
-  process.exit(1);
+  exit(1);
 }
