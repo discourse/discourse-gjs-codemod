@@ -16,11 +16,6 @@ const defaultGlimmerOutlets = [
   "chat-join-channel-button",
 ];
 
-const templateOnlyJs = `
-import templateOnly from "@ember/component/template-only";
-export default templateOnly();
-`.trim();
-
 const originalPackageJson = readFileSync("package.json", "utf8");
 let parsed = JSON.parse(originalPackageJson);
 const packageName = env.PACKAGE_NAME || parsed.name || basename(cwd());
@@ -60,15 +55,17 @@ for (const file of files) {
   }
 }
 
+// TODO: get rid of decoratePluginOutlet
+
 console.log("Found connectors:\n");
 for (const [path, { outletName, connectorName, extensions }] of connectors) {
-  console.log(outletName, connectorName);
+  console.log(`${outletName}\t⬅️\t${connectorName}`);
 
   if (extensions.length === 1 && extensions[0] === "hbs") {
     if (defaultGlimmerOutlets.includes(outletName)) {
       console.log(`${connectorName} is a 'defaultGlimmer' connector`);
     } else {
-      writeFileSync(`./${path}.js`, templateOnlyJs);
+      writeFileSync(`./${path}.js`, "export default {};");
     }
   } else {
     const filename = `${path}.js`;
@@ -81,7 +78,6 @@ for (const [path, { outletName, connectorName, extensions }] of connectors) {
     }
   }
 }
-exit(0);
 
 async function runTemplateTagCodemod({
   renderTests,
@@ -92,26 +88,30 @@ async function runTemplateTagCodemod({
   const cli = join(dirname(fileURLToPath(location)), "cli.js");
   let completedRun = false;
 
-  await execa({
-    stdout: function* (line) {
-      console.log(line);
-      if (line.includes("Completed run")) {
-        completedRun = true;
-      }
-    },
-    env: { FORCE_COLOR: true, PACKAGE_NAME: packageName },
-  })`${cli}
-      --relativeLocalPaths=false
-      --nativeRouteTemplates=false
-      --nativeLexicalThis=false
-      --templateInsertion=end
-      --addNameToTemplateOnly
-      ${renderTests ? `--renderTests=${renderTests}` : ""}
-      ${routeTemplates ? `--routeTemplates=${routeTemplates}` : ""}
-      ${components ? `--components=${components}` : ""}
-      --customResolver=${join(import.meta.dirname, "custom-resolver.js")}
-      --renamingRules=${join(import.meta.dirname, "rules.js")}
-  `;
+  await execa(
+    cli,
+    [
+      "--relativeLocalPaths=false",
+      "--nativeRouteTemplates=false",
+      "--nativeLexicalThis=false",
+      "--templateInsertion=end",
+      "--addNameToTemplateOnly",
+      `--customResolver=${join(import.meta.dirname, "custom-resolver.js")}`,
+      `--renamingRules=${join(import.meta.dirname, "rules.js")}`,
+      renderTests ? `--renderTests=${renderTests}` : null,
+      routeTemplates ? `--routeTemplates=${routeTemplates}` : null,
+      components ? `--components=${components}` : null,
+    ].filter(Boolean),
+    {
+      stdout: function* (line) {
+        console.log(line);
+        if (line.includes("Completed run")) {
+          completedRun = true;
+        }
+      },
+      env: { FORCE_COLOR: true, PACKAGE_NAME: packageName },
+    }
+  );
 
   if (!completedRun) {
     throw new Error("template-tag-codemod failed!");
@@ -147,11 +147,8 @@ let errors = [];
 try {
   await execa({ stdio: "inherit" })`pnpm install`;
 
-  runTemplateTagCodemod({ components: "**/connectors/**/*.hbs" });
-
-  exit(0);
-
-  runTemplateTagCodemod({
+  await runTemplateTagCodemod({ components: "**/connectors/**/*.hbs" });
+  await runTemplateTagCodemod({
     renderTests: "test/**/*.js",
     routeTemplates: "**/templates/**/*.hbs",
     components: "**/components/**/*.hbs",
