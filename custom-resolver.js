@@ -28,7 +28,7 @@ function itemExists(path) {
   );
 }
 
-function findCoreModule(type, name) {
+function findModule(type, name) {
   for (const mod of modules) {
     if (mod[type]?.[name]) {
       return mod[type]?.[name];
@@ -37,7 +37,7 @@ function findCoreModule(type, name) {
 }
 
 function findItem(type, name) {
-  const coreModule = findCoreModule(type, name);
+  const coreModule = findModule(type, name);
   if (coreModule) {
     return coreModule;
   }
