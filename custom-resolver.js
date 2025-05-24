@@ -1,6 +1,7 @@
 import { globSync, readFileSync } from "node:fs";
 import discourse from "./modules/discourse.js";
 import admin from "./modules/admin.js";
+import chat from "./modules/chat.js";
 import dialogHolder from "./modules/dialog-holder.js";
 import floatKit from "./modules/float-kit.js";
 import selectKit from "./modules/select-kit.js";
@@ -12,6 +13,7 @@ const packageName = process.env.PACKAGE_NAME;
 const modules = [
   discourse,
   admin,
+  chat,
   dialogHolder,
   floatKit,
   selectKit,
