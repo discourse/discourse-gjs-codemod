@@ -62,18 +62,20 @@ for (const [path, { outletName, connectorName, extensions }] of connectors) {
   if (extensions.length === 1 && extensions[0] === "hbs") {
     if (defaultGlimmerOutlets.includes(outletName)) {
       console.log(`${connectorName} is a 'defaultGlimmer' connector`);
+      continue;
     } else {
+      console.log(`Adding an empty connector js to ${connectorName}`);
       writeFileSync(`./${path}.js`, "export default {};");
     }
-  } else {
-    const filename = `${path}.js`;
-    const file = readFileSync(filename, "utf8");
-    const isLegacy = file.includes("export default {");
-    if (isLegacy) {
-      const converter = new Converter(file, filename, outletName);
-      const output = converter.run();
-      writeFileSync(filename, output);
-    }
+  }
+
+  const filename = `${path}.js`;
+  const file = readFileSync(filename, "utf8");
+  const isLegacy = file.includes("export default {");
+  if (isLegacy) {
+    const converter = new Converter(file, filename, outletName);
+    const output = converter.run();
+    writeFileSync(filename, output);
   }
 }
 
