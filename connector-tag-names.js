@@ -154,6 +154,7 @@ const connectorTagNames = {
   "above-user-bookmarks": "div",
   "user-notifications-bottom": "li",
   "user-summary-stat": "li",
+  "category-custom-settings": "div",
 };
 
 export default connectorTagNames;
