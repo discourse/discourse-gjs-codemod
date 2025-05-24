@@ -55,8 +55,6 @@ for (const file of files) {
   }
 }
 
-// TODO: get rid of decoratePluginOutlet
-
 console.log("Found connectors:\n");
 for (const [path, { outletName, connectorName, extensions }] of connectors) {
   console.log(`${outletName}\t⬅️\t${connectorName}`);
