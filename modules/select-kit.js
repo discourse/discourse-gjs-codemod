@@ -141,5 +141,4 @@ export default {
     "category-drop/category-drop-header":
       "select-kit/components/category-drop/category-drop-header",
   },
-  helpers: {},
 };

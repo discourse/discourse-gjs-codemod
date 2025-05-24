@@ -12,5 +12,4 @@ export default {
     not: "truth-helpers/helpers/not",
     or: "truth-helpers/helpers/or",
   },
-  components: {},
 };
