@@ -82,8 +82,8 @@ export default async function (path, filename) {
     .replace(/^javascripts\/discourse/, `_fake_theme/discourse`);
 
   if (
-    (result.startsWith("discourse/plugins") &&
-      sourceModulePath.startsWith("discourse/plugins")) ||
+    (result.startsWith(`discourse/plugins/${packageName}/`) &&
+      sourceModulePath.startsWith(`discourse/plugins/${packageName}/`)) ||
     (result.startsWith("_fake_theme/") &&
       sourceModulePath.startsWith("_fake_theme/"))
   ) {
