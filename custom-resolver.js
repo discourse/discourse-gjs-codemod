@@ -37,9 +37,9 @@ function findModule(type, name) {
 }
 
 function findItem(type, name) {
-  const coreModule = findModule(type, name);
-  if (coreModule) {
-    return coreModule;
+  const module = findModule(type, name);
+  if (module) {
+    return module;
   }
 
   // target plugin
