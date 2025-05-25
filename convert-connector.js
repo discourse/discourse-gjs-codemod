@@ -17,6 +17,11 @@ export default class Converter {
 
     if (connectorTagNames[outletName]) {
       this.tagName = connectorTagNames[outletName];
+    } else if (
+      connectorTagNames[outletName.replace(/__before$/, "")] ||
+      connectorTagNames[outletName.replace(/__after$/, "")]
+    ) {
+      this.tagName = "div";
     } else {
       throw new Error(`🚨🚨🚨 Unknown plugin outlet: ${outletName}`);
     }
