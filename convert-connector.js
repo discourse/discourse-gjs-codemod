@@ -15,11 +15,11 @@ export default class Converter {
     this.cssClasses = [`${outletName}-outlet`, connectorName];
     this.className = classify(connectorName);
 
-    if (connectorTagNames[outletName]) {
+    if (connectorTagNames[outletName] !== undefined) {
       this.tagName = connectorTagNames[outletName];
     } else if (
-      connectorTagNames[outletName.replace(/__before$/, "")] ||
-      connectorTagNames[outletName.replace(/__after$/, "")]
+      connectorTagNames[outletName.replace(/__before$/, "")] !== undefined ||
+      connectorTagNames[outletName.replace(/__after$/, "")] !== undefined
     ) {
       this.tagName = "div";
     } else {
