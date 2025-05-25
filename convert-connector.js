@@ -108,7 +108,7 @@ export default class Converter {
                     this.rename(
                       path,
                       method,
-                      method.params[0]?.name,
+                      method.params[1]?.name,
                       "context"
                     );
                   }
