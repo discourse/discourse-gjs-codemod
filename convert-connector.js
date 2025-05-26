@@ -108,7 +108,7 @@ export default class Converter {
                     this.rename(
                       path,
                       method,
-                      method.params[1]?.name,
+                      method.params?.[1]?.name,
                       "context"
                     );
                   }
@@ -117,15 +117,15 @@ export default class Converter {
                 const setupComponent = this.extractMethod(
                   "setupComponent",
                   (method) => {
-                    this.rename(path, method, method.params[0]?.name, "this");
-                    this.rename(path, method, method.params[1]?.name, "this");
+                    this.rename(path, method, method.params?.[0]?.name, "this");
+                    this.rename(path, method, method.params?.[1]?.name, "this");
                   }
                 );
 
                 const teardownComponent = this.extractMethod(
                   "teardownComponent",
                   (method) => {
-                    this.rename(path, method, method.params[0]?.name, "this");
+                    this.rename(path, method, method.params?.[0]?.name, "this");
                   }
                 );
 
