@@ -32,8 +32,8 @@ import { classNames, tagName } from "@ember-decorators/component";
 @tagName("div")
 @classNames('user-preferences-notifications-outlet', 'notify-code-review')
 export default class NotifyCodeReview extends Component {
-  static shouldRender(context, component) {
-    return component.currentUser && component.currentUser.admin;
+  static shouldRender(args, context) {
+    return context.currentUser && context.currentUser.admin;
   }
   init() {
     super.init(...arguments);
