@@ -52,3 +52,28 @@ test("converts given connector from the legacy format to an ember component", ()
 
   assert.equal(output.trim(), expectedOutput);
 });
+
+const arrowFuncInput = `
+export default {
+  shouldRender: (args, c) => args && args.editorType === "composer" && c.currentUser,
+};
+`.trim();
+
+const arrowFuncExpectedOutput = `
+import Component from "@ember/component";
+import { classNames, tagName } from "@ember-decorators/component";
+@tagName("div")
+@classNames('user-preferences-notifications-outlet', 'notify-code-review')
+export default class NotifyCodeReview extends Component {
+  static shouldRender(args, context) {
+    return args && args.editorType === "composer" && context.currentUser;
+  }
+}
+`.trim();
+
+test("converts arrow functions", () => {
+  const converter = new Converter(arrowFuncInput, filename, outletName);
+  const output = converter.run();
+
+  assert.equal(output.trim(), arrowFuncExpectedOutput);
+});

@@ -46,11 +46,20 @@ export default class Converter {
   }
 
   extractMethod(name, callback) {
-    const method = this.declaration.properties.find(
+    let method = this.declaration.properties.find(
       (prop) => prop.key.name === name
     );
 
     if (method) {
+      if (method.type === "ObjectProperty") {
+        method = t.objectMethod(
+          "method",
+          t.stringLiteral(name),
+          method.value.params,
+          t.blockStatement([t.returnStatement(method.value.body)])
+        );
+      }
+
       callback(method);
       return method;
     }
