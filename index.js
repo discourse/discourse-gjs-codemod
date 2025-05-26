@@ -55,28 +55,32 @@ for (const file of files) {
   }
 }
 
-console.log("Found connectors:\n");
-for (const [path, { outletName, connectorName, extensions }] of connectors) {
-  console.log(`${outletName}\t⬅️\t${connectorName}`);
+if (connectors.size > 0) {
+  console.log("Found connectors:\n");
+  for (const [path, { outletName, connectorName, extensions }] of connectors) {
+    console.log(`${outletName}\t⬅️\t${connectorName}`);
 
-  if (extensions.length === 1 && extensions[0] === "hbs") {
-    if (defaultGlimmerOutlets.includes(outletName)) {
-      console.log(`${connectorName} is a 'defaultGlimmer' connector`);
-      continue;
-    } else {
-      console.log(`Adding an empty connector js to ${connectorName}`);
-      writeFileSync(`./${path}.js`, "export default {};");
+    if (extensions.length === 1 && extensions[0] === "hbs") {
+      if (defaultGlimmerOutlets.includes(outletName)) {
+        console.log(`${connectorName} is a 'defaultGlimmer' connector`);
+        continue;
+      } else {
+        console.log(`Adding an empty connector js to ${connectorName}`);
+        writeFileSync(`./${path}.js`, "export default {};");
+      }
+    }
+
+    const filename = `${path}.js`;
+    const file = readFileSync(filename, "utf8");
+    const isLegacy = file.includes("export default {");
+    if (isLegacy) {
+      const converter = new Converter(file, filename, outletName);
+      const output = converter.run();
+      writeFileSync(filename, output);
     }
   }
-
-  const filename = `${path}.js`;
-  const file = readFileSync(filename, "utf8");
-  const isLegacy = file.includes("export default {");
-  if (isLegacy) {
-    const converter = new Converter(file, filename, outletName);
-    const output = converter.run();
-    writeFileSync(filename, output);
-  }
+} else {
+  console.log("No connectors found");
 }
 
 async function runTemplateTagCodemod({
@@ -147,7 +151,10 @@ let errors = [];
 try {
   await execa({ stdio: "inherit" })`pnpm install`;
 
-  await runTemplateTagCodemod({ components: "**/connectors/**/*.hbs" });
+  if (connectors.size > 0) {
+    await runTemplateTagCodemod({ components: "**/connectors/**/*.hbs" });
+  }
+
   await runTemplateTagCodemod({
     renderTests: "test/**/*.js",
     routeTemplates: "**/templates/**/*.hbs",
