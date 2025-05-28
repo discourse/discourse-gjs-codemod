@@ -23,7 +23,7 @@ const packageName = env.PACKAGE_NAME || parsed.name || basename(cwd());
 // First, search for the deprecated api method and bail if found
 const result = await execa({
   reject: false,
-})`grep --include=*.js --include=*.gjs -r javascripts -r assets -e registerConnectorClass`;
+})`grep --include=*.js --include=*.gjs -r admin -r javascripts -r assets -e registerConnectorClass`;
 if (result.exitCode === 0) {
   console.error("Found uses of 'registerConnectorClass'. Fix those first:");
   console.error(result.stdout);
@@ -39,7 +39,9 @@ if (result.exitCode === 0) {
 //
 // using the list - run the template tag codemod as if those files were components
 
-const files = globSync("{assets,javascripts}/**/connectors/**/*.{js,hbs}");
+const files = globSync(
+  "{admin,assets,javascripts}/**/connectors/**/*.{js,hbs}"
+);
 const connectors = new Map();
 for (const file of files) {
   const [, path, outletName, connectorName, extension] = file.match(
