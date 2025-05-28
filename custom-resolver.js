@@ -43,7 +43,10 @@ function findItem(type, name) {
   // target plugin
   if (itemExists(`./assets/javascripts/discourse/${type}/${name}`)) {
     return `discourse/plugins/${packageName}/discourse/${type}/${name}`;
-  } else if (itemExists(`./admin/assets/javascripts/admin/${type}/${name}`)) {
+  } else if (
+    itemExists(`./admin/assets/javascripts/admin/${type}/${name}`) ||
+    itemExists(`./admin/assets/javascripts/discourse/${type}/${name}`)
+  ) {
     return `discourse/plugins/${packageName}/admin/${type}/${name}`;
   } else if (itemExists(`./javascripts/discourse/${type}/${name}`)) {
     return `_fake_theme/discourse/${type}/${name}`;
@@ -74,7 +77,7 @@ export default async function (path, filename) {
       `discourse/plugins/${packageName}/discourse`
     )
     .replace(
-      /^admin\/assets\/javascripts\/admin/,
+      /^admin\/assets\/javascripts\/(admin|discourse)/,
       `discourse/plugins/${packageName}/admin`
     )
     .replace(/^javascripts\/discourse/, `_fake_theme/discourse`);
