@@ -15,5 +15,4 @@ export default {
     "d-tooltip": "float-kit/components/d-tooltip",
     "d-tooltips": "float-kit/components/d-tooltips",
   },
-  helpers: {},
 };

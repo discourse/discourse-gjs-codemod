@@ -916,4 +916,14 @@ export default {
     "value-entered": "discourse/helpers/value-entered",
     "with-event-value": "discourse/helpers/with-event-value",
   },
+  modifiers: {
+    "auto-focus": "discourse/modifiers/auto-focus",
+    "close-on-click-outside": "discourse/modifiers/close-on-click-outside",
+    draggable: "discourse/modifiers/draggable",
+    "observe-intersection": "discourse/modifiers/observe-intersection",
+    "on-resize": "discourse/modifiers/on-resize",
+    "sticky-avatars": "discourse/modifiers/sticky-avatars",
+    swipe: "discourse/modifiers/swipe",
+    "trap-tab": "discourse/modifiers/trap-tab",
+  },
 };

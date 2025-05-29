@@ -1,19 +1,22 @@
 import { globSync, readFileSync } from "node:fs";
-import discourse from "./core-modules/discourse.js";
-import admin from "./core-modules/admin.js";
-import dialogHolder from "./core-modules/dialog-holder.js";
-import floatKit from "./core-modules/float-kit.js";
-import selectKit from "./core-modules/select-kit.js";
-import truthHelpers from "./core-modules/truth-helpers.js";
+import discourse from "./modules/discourse.js";
+import admin from "./modules/admin.js";
+import dialogHolder from "./modules/dialog-holder.js";
+import floatKit from "./modules/float-kit.js";
+import selectKit from "./modules/select-kit.js";
+import truthHelpers from "./modules/truth-helpers.js";
+import renderModifiers from "./modules/render-modifiers.js";
+import { relative, dirname } from "node:path";
 
 const packageName = process.env.PACKAGE_NAME;
-const coreModules = [
+const modules = [
   discourse,
   admin,
   dialogHolder,
   floatKit,
   selectKit,
   truthHelpers,
+  renderModifiers,
 ];
 
 function itemExists(path) {
@@ -23,38 +26,71 @@ function itemExists(path) {
   );
 }
 
-function findCoreModule(type, name) {
-  for (const mod of coreModules) {
-    if (mod[type][name]) {
-      return mod[type][name];
+function findModule(type, name) {
+  for (const mod of modules) {
+    if (mod[type]?.[name]) {
+      return mod[type]?.[name];
     }
   }
 }
 
 function findItem(type, name) {
-  const coreModule = findCoreModule(type, name);
-  if (coreModule) {
-    return coreModule;
+  const module = findModule(type, name);
+  if (module) {
+    return module;
   }
 
   // target plugin
   if (itemExists(`./assets/javascripts/discourse/${type}/${name}`)) {
     return `discourse/plugins/${packageName}/discourse/${type}/${name}`;
-  } else if (itemExists(`./admin/assets/javascripts/admin/${type}/${name}`)) {
+  } else if (
+    itemExists(`./admin/assets/javascripts/admin/${type}/${name}`) ||
+    itemExists(`./admin/assets/javascripts/discourse/${type}/${name}`)
+  ) {
     return `discourse/plugins/${packageName}/admin/${type}/${name}`;
+  } else if (itemExists(`./javascripts/discourse/${type}/${name}`)) {
+    return `_fake_theme/discourse/${type}/${name}`;
   }
 }
 
-export default async function (path) {
+export default async function (path, filename) {
   if (!path.startsWith("@embroider/virtual/")) {
     return;
   }
 
   const [, type, name] = path.match(/@embroider\/virtual\/(.+?)\/([^.]+)/);
 
+  let result;
   if (type === "ambiguous") {
-    return findItem("components", name) || findItem("helpers", name);
+    result = findItem("components", name) || findItem("helpers", name);
+  } else {
+    result = findItem(type, name);
   }
 
-  return findItem(type, name);
+  if (!result) {
+    return;
+  }
+
+  const sourceModulePath = filename
+    .replace(
+      /^assets\/javascripts\/discourse/,
+      `discourse/plugins/${packageName}/discourse`
+    )
+    .replace(
+      /^admin\/assets\/javascripts\/(admin|discourse)/,
+      `discourse/plugins/${packageName}/admin`
+    )
+    .replace(/^javascripts\/discourse/, `_fake_theme/discourse`);
+
+  if (
+    (result.startsWith(`discourse/plugins/${packageName}/`) &&
+      sourceModulePath.startsWith(`discourse/plugins/${packageName}/`)) ||
+    (result.startsWith("_fake_theme/") &&
+      sourceModulePath.startsWith("_fake_theme/"))
+  ) {
+    const relativePath = relative(dirname(sourceModulePath), result);
+    result = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
+  }
+
+  return result;
 }
