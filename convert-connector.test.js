@@ -19,14 +19,22 @@ export default {
         component.get("notifyOnCodeReviews")
       );
     });
+
+    this.args.bar();
   },
   shouldRender(args, component) {
     return component.currentUser && component.currentUser.admin;
   },
+  actions: {
+    foo() {
+      this.args.bar();
+    }
+  }
 };
 `.trim();
 
 const expectedOutput = `
+import { action } from "@ember/object";
 import Component from "@ember/component";
 import { classNames, tagName } from "@ember-decorators/component";
 @tagName("div")
@@ -42,6 +50,11 @@ export default class NotifyCodeReview extends Component {
     this.addObserver("notifyOnCodeReviews", () => {
       user.set("custom_fields.notify_on_code_reviews", this.get("notifyOnCodeReviews"));
     });
+    this.outletArgs.bar();
+  }
+  @action
+  foo() {
+    this.outletArgs.bar();
   }
 }
 `.trim();

@@ -79,6 +79,17 @@ export default class Converter {
     });
   }
 
+  renameThisArgs(path, method) {
+    path.scope.traverse(method, {
+      MemberExpression(innerPath) {
+        const { object, property } = innerPath.node;
+        if (object.type === "ThisExpression" && property.name === "args") {
+          property.name = "outletArgs";
+        }
+      },
+    });
+  }
+
   callSuper(name) {
     return t.expressionStatement(
       t.callExpression(t.memberExpression(t.super(), t.identifier(name)), [
@@ -114,6 +125,7 @@ export default class Converter {
                 const shouldRender = this.extractMethod(
                   "shouldRender",
                   (method) => {
+                    this.renameThisArgs(path, method);
                     this.rename(
                       path,
                       method,
@@ -126,6 +138,7 @@ export default class Converter {
                 const setupComponent = this.extractMethod(
                   "setupComponent",
                   (method) => {
+                    this.renameThisArgs(path, method);
                     this.rename(path, method, method.params?.[0]?.name, "this");
                     this.rename(path, method, method.params?.[1]?.name, "this");
                   }
@@ -134,6 +147,7 @@ export default class Converter {
                 const teardownComponent = this.extractMethod(
                   "teardownComponent",
                   (method) => {
+                    this.renameThisArgs(path, method);
                     this.rename(path, method, method.params?.[0]?.name, "this");
                   }
                 );
@@ -217,6 +231,7 @@ export default class Converter {
                     );
 
                     method.decorators = [t.decorator(t.identifier("action"))];
+                    this.renameThisArgs(path, method);
 
                     classDeclaration.body.body.push(method);
                   }
