@@ -250,7 +250,11 @@ export default class Converter {
       `export default class ${this.className}`
     );
 
-    output = output.replace(`@tagName("div")\n`, ``);
+    output = output.replace(`@tagName("div")\n`, "");
+
+    if (output.includes(`@tagName("")`)) {
+      output = output.replace(/@classNames\(.+?\)\n/, "");
+    }
 
     return output;
   }

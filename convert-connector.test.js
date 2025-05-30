@@ -76,7 +76,6 @@ const arrowFuncExpectedOutput = `
 import Component from "@ember/component";
 import { classNames, tagName } from "@ember-decorators/component";
 @tagName("")
-@classNames('main-outlet-bottom-outlet', 'notify-code-review')
 export default class NotifyCodeReview extends Component {
   static shouldRender(args, context) {
     return args && args.editorType === "composer" && context.currentUser;
