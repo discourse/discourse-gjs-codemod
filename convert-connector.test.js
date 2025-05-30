@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert";
 import test from "node:test";
 import Converter from "./convert-connector.js";
 
-const outletName = "user-preferences-notifications";
+const divOutletName = "user-preferences-notifications";
 const filename = "notify-code-review.js";
 const input = `
 export default {
@@ -37,7 +37,6 @@ const expectedOutput = `
 import { action } from "@ember/object";
 import Component from "@ember/component";
 import { classNames, tagName } from "@ember-decorators/component";
-@tagName("div")
 @classNames('user-preferences-notifications-outlet', 'notify-code-review')
 export default class NotifyCodeReview extends Component {
   static shouldRender(args, context) {
@@ -60,12 +59,13 @@ export default class NotifyCodeReview extends Component {
 `.trim();
 
 test("converts given connector from the legacy format to an ember component", () => {
-  const converter = new Converter(input, filename, outletName);
+  const converter = new Converter(input, filename, divOutletName);
   const output = converter.run();
 
   assert.equal(output.trim(), expectedOutput);
 });
 
+const outletName = "main-outlet-bottom";
 const arrowFuncInput = `
 export default {
   shouldRender: (args, c) => args && args.editorType === "composer" && c.currentUser,
@@ -75,8 +75,8 @@ export default {
 const arrowFuncExpectedOutput = `
 import Component from "@ember/component";
 import { classNames, tagName } from "@ember-decorators/component";
-@tagName("div")
-@classNames('user-preferences-notifications-outlet', 'notify-code-review')
+@tagName("")
+@classNames('main-outlet-bottom-outlet', 'notify-code-review')
 export default class NotifyCodeReview extends Component {
   static shouldRender(args, context) {
     return args && args.editorType === "composer" && context.currentUser;

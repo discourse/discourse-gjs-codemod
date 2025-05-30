@@ -245,9 +245,13 @@ export default class Converter {
       ],
     }).code;
 
-    return output.replace(
+    output = output.replace(
       `class ${this.className}`,
       `export default class ${this.className}`
     );
+
+    output = output.replace(`@tagName("div")\n`, ``);
+
+    return output;
   }
 }
