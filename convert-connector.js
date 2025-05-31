@@ -32,10 +32,8 @@ export default class Converter {
       plugins: ["decorators-legacy"],
     })`
       import Component from "@ember/component";
-      import {
-        classNames,
-        tagName,
-      } from "@ember-decorators/component";
+      import { tagName } from "@ember-decorators/component";
+      import { classNames } from "@ember-decorators/component";
 
       @tagName("${this.tagName}")
       @classNames(${this.cssClasses.map((c) => "'" + c + "'").join(", ")})
@@ -250,10 +248,18 @@ export default class Converter {
       `export default class ${this.className}`
     );
 
-    output = output.replace(`@tagName("div")\n`, "");
-
-    if (output.includes(`@tagName("")`)) {
+    if (output.includes(`@tagName("div")`)) {
+      output = output.replace(`@tagName("div")\n`, "");
+      output = output.replace(
+        `import { tagName } from "@ember-decorators/component";`,
+        ""
+      );
+    } else if (output.includes(`@tagName("")`)) {
       output = output.replace(/@classNames\(.+?\)\n/, "");
+      output = output.replace(
+        `import { classNames } from "@ember-decorators/component";`,
+        ""
+      );
     }
 
     return output;
