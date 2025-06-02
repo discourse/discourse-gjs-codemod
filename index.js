@@ -171,6 +171,18 @@ try {
   for (const name of modifiedFiles) {
     let contents = readFileSync(name, "utf8");
 
+    // fix conflicting connector names
+    if (name.includes("/connectors/")) {
+      const connectorName = contents.match(/export default class (\S+)/)?.[1];
+      if (connectorName && contents.includes(`import ${connectorName}`)) {
+        contents = contents.replace(
+          `export default class ${connectorName}`,
+          `export default class ${connectorName}Connector`
+        );
+        writeFileSync(name, contents);
+      }
+    }
+
     if (/\bi18n0\b/.test(contents)) {
       console.log(`replacing 'i18n0' in ${name}`);
       contents = contents.replace(
