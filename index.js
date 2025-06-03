@@ -174,7 +174,8 @@ try {
     // fix conflicting connector names
     if (name.includes("/connectors/")) {
       const connectorName = contents.match(/export default class (\S+)/)?.[1];
-      if (connectorName && contents.includes(`import ${connectorName}`)) {
+      const importRegex = new RegExp(`import ${connectorName}`, "i");
+      if (connectorName && importRegex.test(contents)) {
         contents = contents.replace(
           `export default class ${connectorName}`,
           `export default class ${connectorName}Connector`
