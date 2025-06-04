@@ -171,6 +171,10 @@ try {
   for (const name of modifiedFiles) {
     let contents = readFileSync(name, "utf8");
 
+    if (contents.includes("_fake_theme")) {
+      errors.push("⚠️ detected 'fake_theme' import paths. please fix");
+    }
+
     // fix conflicting connector names
     if (name.includes("/connectors/")) {
       const connectorName = contents.match(/export default class (\S+)/)?.[1];
