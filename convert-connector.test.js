@@ -37,7 +37,7 @@ const expectedOutput = `
 import { action } from "@ember/object";
 import Component from "@ember/component";
 import { classNames } from "@ember-decorators/component";
-@classNames('user-preferences-notifications-outlet', 'notify-code-review')
+@classNames("user-preferences-notifications-outlet", "notify-code-review")
 export default class NotifyCodeReview extends Component {
   static shouldRender(args, context) {
     return context.currentUser && context.currentUser.admin;

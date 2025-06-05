@@ -1,11 +1,13 @@
 import { transformSync } from "@babel/core";
 import { readFileSync } from "node:fs";
-import template from "@babel/template";
+import babelTemplate from "@babel/template";
 import * as t from "@babel/types";
 import connectorTagNames from "./connector-tag-names.js";
 import { classify } from "@ember/string";
 import { basename } from "node:path";
 import { env } from "node:process";
+
+const template = babelTemplate.default;
 
 export default class Converter {
   constructor(file, filename, outletName) {
@@ -28,19 +30,67 @@ export default class Converter {
   }
 
   createNewClass() {
-    this.newContents = template.default({
-      plugins: ["decorators-legacy"],
-    })`
-      import Component from "@ember/component";
-      import { tagName } from "@ember-decorators/component";
-      import { classNames } from "@ember-decorators/component";
+    this.newContents = [];
 
-      @tagName("${this.tagName}")
-      @classNames(${this.cssClasses.map((c) => "'" + c + "'").join(", ")})
-      class ${this.className} extends Component {}
-    `();
+    this.newContents.push(
+      t.importDeclaration(
+        [t.importDefaultSpecifier(t.identifier("Component"))],
+        t.stringLiteral("@ember/component")
+      )
+    );
 
-    return this.newContents.find((node) => node.type === "ClassDeclaration");
+    const declaration = t.classDeclaration(
+      t.identifier(this.className),
+      t.identifier("Component"),
+      t.classBody([]),
+      []
+    );
+
+    if (this.tagName !== "div") {
+      declaration.decorators.push(
+        t.decorator(
+          t.callExpression(t.identifier("tagName"), [
+            t.stringLiteral(this.tagName),
+          ])
+        )
+      );
+
+      // import { tagName } from "@ember-decorators/component";
+      this.newContents.push(
+        t.importDeclaration(
+          [t.importSpecifier(t.identifier("tagName"), t.identifier("tagName"))],
+          t.stringLiteral("@ember-decorators/component")
+        )
+      );
+    }
+
+    if (this.tagName !== "") {
+      declaration.decorators.push(
+        t.decorator(
+          t.callExpression(
+            t.identifier("classNames"),
+            this.cssClasses.map((c) => t.stringLiteral(c))
+          )
+        )
+      );
+
+      // import { classNames } from "@ember-decorators/component";
+      this.newContents.push(
+        t.importDeclaration(
+          [
+            t.importSpecifier(
+              t.identifier("classNames"),
+              t.identifier("classNames")
+            ),
+          ],
+          t.stringLiteral("@ember-decorators/component")
+        )
+      );
+    }
+
+    this.newContents.push(declaration);
+
+    return declaration;
   }
 
   extractMethod(name, callback) {
@@ -243,25 +293,9 @@ export default class Converter {
       ],
     }).code;
 
-    output = output.replace(
+    return output.replace(
       `class ${this.className}`,
       `export default class ${this.className}`
     );
-
-    if (output.includes(`@tagName("div")`)) {
-      output = output.replace(`@tagName("div")\n`, "");
-      output = output.replace(
-        `import { tagName } from "@ember-decorators/component";`,
-        ""
-      );
-    } else if (output.includes(`@tagName("")`)) {
-      output = output.replace(/@classNames\(.+?\)\n/, "");
-      output = output.replace(
-        `import { classNames } from "@ember-decorators/component";`,
-        ""
-      );
-    }
-
-    return output;
   }
 }
