@@ -478,6 +478,7 @@ const connectorTagNames = {
   "search-banner-below-headline": "",
   "search-banner-below-input": "",
   "above-discourse-showcased-categories": "div",
+  "below-featured-tiles": "div",
 };
 
 export default connectorTagNames;

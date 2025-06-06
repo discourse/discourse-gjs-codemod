@@ -1,11 +1,13 @@
 import { transformSync } from "@babel/core";
 import { readFileSync } from "node:fs";
-import template from "@babel/template";
+import babelTemplate from "@babel/template";
 import * as t from "@babel/types";
 import connectorTagNames from "./connector-tag-names.js";
 import { classify } from "@ember/string";
 import { basename } from "node:path";
 import { env } from "node:process";
+
+const template = babelTemplate.default;
 
 export default class Converter {
   constructor(file, filename, outletName) {
@@ -28,21 +30,67 @@ export default class Converter {
   }
 
   createNewClass() {
-    this.newContents = template.default({
-      plugins: ["decorators-legacy"],
-    })`
-      import Component from "@ember/component";
-      import {
-        classNames,
-        tagName,
-      } from "@ember-decorators/component";
+    this.newContents = [];
 
-      @tagName("${this.tagName}")
-      @classNames(${this.cssClasses.map((c) => "'" + c + "'").join(", ")})
-      class ${this.className} extends Component {}
-    `();
+    this.newContents.push(
+      t.importDeclaration(
+        [t.importDefaultSpecifier(t.identifier("Component"))],
+        t.stringLiteral("@ember/component")
+      )
+    );
 
-    return this.newContents.find((node) => node.type === "ClassDeclaration");
+    const declaration = t.classDeclaration(
+      t.identifier(this.className),
+      t.identifier("Component"),
+      t.classBody([]),
+      []
+    );
+
+    if (this.tagName !== "div") {
+      declaration.decorators.push(
+        t.decorator(
+          t.callExpression(t.identifier("tagName"), [
+            t.stringLiteral(this.tagName),
+          ])
+        )
+      );
+
+      // import { tagName } from "@ember-decorators/component";
+      this.newContents.push(
+        t.importDeclaration(
+          [t.importSpecifier(t.identifier("tagName"), t.identifier("tagName"))],
+          t.stringLiteral("@ember-decorators/component")
+        )
+      );
+    }
+
+    if (this.tagName !== "") {
+      declaration.decorators.push(
+        t.decorator(
+          t.callExpression(
+            t.identifier("classNames"),
+            this.cssClasses.map((c) => t.stringLiteral(c))
+          )
+        )
+      );
+
+      // import { classNames } from "@ember-decorators/component";
+      this.newContents.push(
+        t.importDeclaration(
+          [
+            t.importSpecifier(
+              t.identifier("classNames"),
+              t.identifier("classNames")
+            ),
+          ],
+          t.stringLiteral("@ember-decorators/component")
+        )
+      );
+    }
+
+    this.newContents.push(declaration);
+
+    return declaration;
   }
 
   extractMethod(name, callback) {
@@ -74,6 +122,17 @@ export default class Converter {
       Identifier(innerPath) {
         if (innerPath.node.name === identifier) {
           innerPath.node.name = replacement;
+        }
+      },
+    });
+  }
+
+  renameThisArgs(path, method) {
+    path.scope.traverse(method, {
+      MemberExpression(innerPath) {
+        const { object, property } = innerPath.node;
+        if (object.type === "ThisExpression" && property.name === "args") {
+          property.name = "outletArgs";
         }
       },
     });
@@ -114,6 +173,7 @@ export default class Converter {
                 const shouldRender = this.extractMethod(
                   "shouldRender",
                   (method) => {
+                    this.renameThisArgs(path, method);
                     this.rename(
                       path,
                       method,
@@ -126,6 +186,7 @@ export default class Converter {
                 const setupComponent = this.extractMethod(
                   "setupComponent",
                   (method) => {
+                    this.renameThisArgs(path, method);
                     this.rename(path, method, method.params?.[0]?.name, "this");
                     this.rename(path, method, method.params?.[1]?.name, "this");
                   }
@@ -134,6 +195,7 @@ export default class Converter {
                 const teardownComponent = this.extractMethod(
                   "teardownComponent",
                   (method) => {
+                    this.renameThisArgs(path, method);
                     this.rename(path, method, method.params?.[0]?.name, "this");
                   }
                 );
@@ -217,6 +279,7 @@ export default class Converter {
                     );
 
                     method.decorators = [t.decorator(t.identifier("action"))];
+                    this.renameThisArgs(path, method);
 
                     classDeclaration.body.body.push(method);
                   }
