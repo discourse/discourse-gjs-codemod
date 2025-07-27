@@ -15,7 +15,7 @@ export default class Converter {
 
     const connectorName = basename(filename, ".js");
     this.cssClasses = [`${outletName}-outlet`, connectorName];
-    this.className = classify(connectorName);
+    this.className = classify(connectorName) + "Connector";
 
     if (connectorTagNames[outletName] !== undefined) {
       this.tagName = connectorTagNames[outletName];

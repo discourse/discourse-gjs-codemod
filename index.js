@@ -175,19 +175,6 @@ try {
       errors.push("⚠️ detected 'fake_theme' import paths. please fix");
     }
 
-    // fix conflicting connector names
-    if (name.includes("/connectors/")) {
-      const connectorName = contents.match(/export default class (\S+)/)?.[1];
-      const importRegex = new RegExp(`import ${connectorName}`, "i");
-      if (connectorName && importRegex.test(contents)) {
-        contents = contents.replace(
-          `export default class ${connectorName}`,
-          `export default class ${connectorName}Connector`
-        );
-        writeFileSync(name, contents);
-      }
-    }
-
     if (/\bi18n0\b/.test(contents)) {
       console.log(`replacing 'i18n0' in ${name}`);
       contents = contents.replace(
