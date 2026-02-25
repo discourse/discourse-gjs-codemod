@@ -6,6 +6,10 @@ import { execa } from "execa";
 import Converter from "./convert-connector.js";
 
 const defaultGlimmerOutlets = [
+  "category-security-permissions-add-group",
+  "category-security-permissions-row-actions",
+  "category-security-permissions-add-group",
+  "category-security-permissions-row-actions",
   "conditional-loading-spinner",
   "fast-edit-footer-after",
   "google-search",
