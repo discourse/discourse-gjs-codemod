@@ -1,13 +1,8 @@
 import { transformSync } from "@babel/core";
-import { readFileSync } from "node:fs";
-import babelTemplate from "@babel/template";
 import * as t from "@babel/types";
 import connectorTagNames from "./connector-tag-names.js";
 import { classify } from "@ember/string";
 import { basename } from "node:path";
-import { env } from "node:process";
-
-const template = babelTemplate.default;
 
 export default class Converter {
   constructor(file, filename, outletName) {

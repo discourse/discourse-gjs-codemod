@@ -1,4 +1,4 @@
-import { globSync, readFileSync } from "node:fs";
+import { globSync } from "node:fs";
 import discourse from "./modules/discourse.js";
 import admin from "./modules/admin.js";
 import dialogHolder from "./modules/dialog-holder.js";
