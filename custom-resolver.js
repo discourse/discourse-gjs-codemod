@@ -74,11 +74,11 @@ export default async function (path, filename) {
   const sourceModulePath = filename
     .replace(
       /^assets\/javascripts\/discourse/,
-      `discourse/plugins/${packageName}/discourse`
+      `discourse/plugins/${packageName}/discourse`,
     )
     .replace(
       /^admin\/assets\/javascripts\/(admin|discourse)/,
-      `discourse/plugins/${packageName}/admin`
+      `discourse/plugins/${packageName}/admin`,
     )
     .replace(/^javascripts\/discourse/, `_fake_theme/discourse`);
 

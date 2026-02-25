@@ -35,15 +35,15 @@ export default class Converter {
     this.newContents.push(
       t.importDeclaration(
         [t.importDefaultSpecifier(t.identifier("Component"))],
-        t.stringLiteral("@ember/component")
-      )
+        t.stringLiteral("@ember/component"),
+      ),
     );
 
     const declaration = t.classDeclaration(
       t.identifier(this.className),
       t.identifier("Component"),
       t.classBody([]),
-      []
+      [],
     );
 
     if (this.tagName !== "div") {
@@ -51,16 +51,16 @@ export default class Converter {
         t.decorator(
           t.callExpression(t.identifier("tagName"), [
             t.stringLiteral(this.tagName),
-          ])
-        )
+          ]),
+        ),
       );
 
       // import { tagName } from "@ember-decorators/component";
       this.newContents.push(
         t.importDeclaration(
           [t.importSpecifier(t.identifier("tagName"), t.identifier("tagName"))],
-          t.stringLiteral("@ember-decorators/component")
-        )
+          t.stringLiteral("@ember-decorators/component"),
+        ),
       );
     }
 
@@ -69,9 +69,9 @@ export default class Converter {
         t.decorator(
           t.callExpression(
             t.identifier("classNames"),
-            this.cssClasses.map((c) => t.stringLiteral(c))
-          )
-        )
+            this.cssClasses.map((c) => t.stringLiteral(c)),
+          ),
+        ),
       );
 
       // import { classNames } from "@ember-decorators/component";
@@ -80,11 +80,11 @@ export default class Converter {
           [
             t.importSpecifier(
               t.identifier("classNames"),
-              t.identifier("classNames")
+              t.identifier("classNames"),
             ),
           ],
-          t.stringLiteral("@ember-decorators/component")
-        )
+          t.stringLiteral("@ember-decorators/component"),
+        ),
       );
     }
 
@@ -95,7 +95,7 @@ export default class Converter {
 
   extractMethod(name, callback) {
     let method = this.declaration.properties.find(
-      (prop) => prop.key.name === name
+      (prop) => prop.key.name === name,
     );
 
     if (method) {
@@ -104,7 +104,7 @@ export default class Converter {
           "method",
           t.stringLiteral(name),
           method.value.params,
-          t.blockStatement([t.returnStatement(method.value.body)])
+          t.blockStatement([t.returnStatement(method.value.body)]),
         );
       }
 
@@ -142,7 +142,7 @@ export default class Converter {
     return t.expressionStatement(
       t.callExpression(t.memberExpression(t.super(), t.identifier(name)), [
         t.spreadElement(t.identifier("arguments")),
-      ])
+      ]),
     );
   }
 
@@ -178,9 +178,9 @@ export default class Converter {
                       path,
                       method,
                       method.params?.[1]?.name,
-                      "context"
+                      "context",
                     );
-                  }
+                  },
                 );
 
                 const setupComponent = this.extractMethod(
@@ -189,7 +189,7 @@ export default class Converter {
                     this.renameThisArgs(path, method);
                     this.rename(path, method, method.params?.[0]?.name, "this");
                     this.rename(path, method, method.params?.[1]?.name, "this");
-                  }
+                  },
                 );
 
                 const teardownComponent = this.extractMethod(
@@ -197,7 +197,7 @@ export default class Converter {
                   (method) => {
                     this.renameThisArgs(path, method);
                     this.rename(path, method, method.params?.[0]?.name, "this");
-                  }
+                  },
                 );
 
                 if (shouldRender) {
@@ -208,8 +208,8 @@ export default class Converter {
                       shouldRender.params,
                       t.blockStatement(shouldRender.body.body),
                       false,
-                      true
-                    )
+                      true,
+                    ),
                   );
                 }
 
@@ -225,8 +225,8 @@ export default class Converter {
                       "method",
                       t.identifier("init"),
                       [],
-                      t.blockStatement(newBody)
-                    )
+                      t.blockStatement(newBody),
+                    ),
                   );
                 }
 
@@ -242,15 +242,15 @@ export default class Converter {
                       "method",
                       t.identifier("willDestroy"),
                       [],
-                      t.blockStatement(newBody)
-                    )
+                      t.blockStatement(newBody),
+                    ),
                   );
                 }
 
                 const actions = this.declaration.properties.find(
                   (prop) =>
                     prop.key.name === "actions" &&
-                    prop.value.type === "ObjectExpression"
+                    prop.value.type === "ObjectExpression",
                 );
 
                 if (actions) {
@@ -259,11 +259,11 @@ export default class Converter {
                       [
                         t.importSpecifier(
                           t.identifier("action"),
-                          t.identifier("action")
+                          t.identifier("action"),
                         ),
                       ],
-                      t.stringLiteral("@ember/object")
-                    )
+                      t.stringLiteral("@ember/object"),
+                    ),
                   );
 
                   for (const action of actions.value.properties) {
@@ -275,7 +275,7 @@ export default class Converter {
                       false,
                       false,
                       false,
-                      action.async
+                      action.async,
                     );
 
                     method.decorators = [t.decorator(t.identifier("action"))];
@@ -295,7 +295,7 @@ export default class Converter {
 
     return output.replace(
       `class ${this.className}`,
-      `export default class ${this.className}`
+      `export default class ${this.className}`,
     );
   }
 }

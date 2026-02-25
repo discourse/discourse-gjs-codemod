@@ -44,12 +44,12 @@ if (result.exitCode === 0) {
 // using the list - run the template tag codemod as if those files were components
 
 const files = globSync(
-  "{admin,assets,javascripts}/**/connectors/**/*.{js,hbs}"
+  "{admin,assets,javascripts}/**/connectors/**/*.{js,hbs}",
 );
 const connectors = new Map();
 for (const file of files) {
   const [, path, outletName, connectorName, extension] = file.match(
-    /^(.+\/connectors)\/([^\/]+)\/([^\.]+)\.(js|hbs)$/
+    /^(.+\/connectors)\/([^\/]+)\/([^\.]+)\.(js|hbs)$/,
   );
 
   const key = `${path}/${outletName}/${connectorName}`;
@@ -120,7 +120,7 @@ async function runTemplateTagCodemod({
         }
       },
       env: { FORCE_COLOR: true, PACKAGE_NAME: packageName },
-    }
+    },
   );
 
   if (!completedRun) {
@@ -183,7 +183,7 @@ try {
       console.log(`replacing 'i18n0' in ${name}`);
       contents = contents.replace(
         /import i18n0 from ['"]discourse\/helpers\/i18n['"];/,
-        ""
+        "",
       );
       contents = contents.replace(/\bi18n0\b/g, "i18n");
       writeFileSync(name, contents);
@@ -194,13 +194,13 @@ try {
         console.log(`replacing string-based action in a route in ${name}`);
         contents = contents.replace(
           /\{\{action ["']([^"']+)["']\}\}/g,
-          "{{@controller.$1}}"
+          "{{@controller.$1}}",
         );
       }
 
       if (/\s(\{\{|\()action\b/.test(contents)) {
         errors.push(
-          `⚠️ please convert a string-based action in a route in ${name}`
+          `⚠️ please convert a string-based action in a route in ${name}`,
         );
       }
 
