@@ -38,7 +38,7 @@ import { action } from "@ember/object";
 import Component from "@ember/component";
 import { classNames } from "@ember-decorators/component";
 @classNames("user-preferences-notifications-outlet", "notify-code-review")
-export default class NotifyCodeReview extends Component {
+export default class NotifyCodeReviewConnector extends Component {
   static shouldRender(args, context) {
     return context.currentUser && context.currentUser.admin;
   }
@@ -76,7 +76,7 @@ const arrowFuncExpectedOutput = `
 import Component from "@ember/component";
 import { tagName } from "@ember-decorators/component";
 @tagName("")
-export default class NotifyCodeReview extends Component {
+export default class NotifyCodeReviewConnector extends Component {
   static shouldRender(args, context) {
     return args && args.editorType === "composer" && context.currentUser;
   }
