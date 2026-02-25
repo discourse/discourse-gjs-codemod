@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { globSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { execa } from "execa";
 import Converter from "./convert-connector.js";
+import { replaceStyleguideImports } from "./styleguide-imports.js";
 
 const defaultGlimmerOutlets = [
   "category-security-permissions-add-group",
@@ -35,7 +36,7 @@ if (result.exitCode === 0) {
 }
 
 // For each unique "{outletName}-{connectorName}" in **/connectors/{*outletName}/{*connectorName}.{js,hbs}
-// - if it's only an hbs and is on THE GLIMMER LIST (TODO): skip
+// - if it's only an hbs and is on THE GLIMMER LIST: skip
 // - if it's only an hbs and isn't on the list: add a boilerplate templateOnly js file
 // - if it's a combo or just js: check for the legacy connector indicators
 //   - if it's a legacy connector - run the converter
@@ -204,6 +205,11 @@ try {
         );
       }
 
+      writeFileSync(name, contents);
+    }
+
+    if (contents.includes("discourse/plugins/styleguide/")) {
+      contents = replaceStyleguideImports(contents);
       writeFileSync(name, contents);
     }
   }

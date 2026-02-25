@@ -2,7 +2,8 @@
   "overrides": [
     {
       "files": [
-        "modules/*"
+        "modules/*",
+        "optional-modules/*"
       ],
       "options": {
         "printWidth": 1000

@@ -6,6 +6,7 @@ import floatKit from "./modules/float-kit.js";
 import selectKit from "./modules/select-kit.js";
 import truthHelpers from "./modules/truth-helpers.js";
 import renderModifiers from "./modules/render-modifiers.js";
+import styleguide from "./optional-modules/styleguide.js";
 import { relative, dirname } from "node:path";
 
 const packageName = process.env.PACKAGE_NAME;
@@ -17,6 +18,7 @@ const modules = [
   selectKit,
   truthHelpers,
   renderModifiers,
+  styleguide,
 ];
 
 function itemExists(path) {
