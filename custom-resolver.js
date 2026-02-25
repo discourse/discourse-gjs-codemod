@@ -1,4 +1,4 @@
-import { globSync, readFileSync } from "node:fs";
+import { globSync } from "node:fs";
 import discourse from "./modules/discourse.js";
 import admin from "./modules/admin.js";
 import dialogHolder from "./modules/dialog-holder.js";
@@ -6,6 +6,7 @@ import floatKit from "./modules/float-kit.js";
 import selectKit from "./modules/select-kit.js";
 import truthHelpers from "./modules/truth-helpers.js";
 import renderModifiers from "./modules/render-modifiers.js";
+import styleguide from "./optional-modules/styleguide.js";
 import { relative, dirname } from "node:path";
 
 const packageName = process.env.PACKAGE_NAME;
@@ -17,6 +18,7 @@ const modules = [
   selectKit,
   truthHelpers,
   renderModifiers,
+  styleguide,
 ];
 
 function itemExists(path) {
@@ -74,11 +76,11 @@ export default async function (path, filename) {
   const sourceModulePath = filename
     .replace(
       /^assets\/javascripts\/discourse/,
-      `discourse/plugins/${packageName}/discourse`
+      `discourse/plugins/${packageName}/discourse`,
     )
     .replace(
       /^admin\/assets\/javascripts\/(admin|discourse)/,
-      `discourse/plugins/${packageName}/admin`
+      `discourse/plugins/${packageName}/admin`,
     )
     .replace(/^javascripts\/discourse/, `_fake_theme/discourse`);
 

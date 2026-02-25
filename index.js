@@ -4,8 +4,13 @@ import { fileURLToPath } from "node:url";
 import { globSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { execa } from "execa";
 import Converter from "./convert-connector.js";
+import { replaceStyleguideImports } from "./styleguide-imports.js";
 
 const defaultGlimmerOutlets = [
+  "category-security-permissions-add-group",
+  "category-security-permissions-row-actions",
+  "category-security-permissions-add-group",
+  "category-security-permissions-row-actions",
   "conditional-loading-spinner",
   "fast-edit-footer-after",
   "google-search",
@@ -31,7 +36,7 @@ if (result.exitCode === 0) {
 }
 
 // For each unique "{outletName}-{connectorName}" in **/connectors/{*outletName}/{*connectorName}.{js,hbs}
-// - if it's only an hbs and is on THE GLIMMER LIST (TODO): skip
+// - if it's only an hbs and is on THE GLIMMER LIST: skip
 // - if it's only an hbs and isn't on the list: add a boilerplate templateOnly js file
 // - if it's a combo or just js: check for the legacy connector indicators
 //   - if it's a legacy connector - run the converter
@@ -40,12 +45,12 @@ if (result.exitCode === 0) {
 // using the list - run the template tag codemod as if those files were components
 
 const files = globSync(
-  "{admin,assets,javascripts}/**/connectors/**/*.{js,hbs}"
+  "{admin,assets,javascripts}/**/connectors/**/*.{js,hbs}",
 );
 const connectors = new Map();
 for (const file of files) {
   const [, path, outletName, connectorName, extension] = file.match(
-    /^(.+\/connectors)\/([^\/]+)\/([^\.]+)\.(js|hbs)$/
+    /^(.+\/connectors)\/([^\/]+)\/([^\.]+)\.(js|hbs)$/,
   );
 
   const key = `${path}/${outletName}/${connectorName}`;
@@ -116,7 +121,7 @@ async function runTemplateTagCodemod({
         }
       },
       env: { FORCE_COLOR: true, PACKAGE_NAME: packageName },
-    }
+    },
   );
 
   if (!completedRun) {
@@ -179,7 +184,7 @@ try {
       console.log(`replacing 'i18n0' in ${name}`);
       contents = contents.replace(
         /import i18n0 from ['"]discourse\/helpers\/i18n['"];/,
-        ""
+        "",
       );
       contents = contents.replace(/\bi18n0\b/g, "i18n");
       writeFileSync(name, contents);
@@ -190,16 +195,21 @@ try {
         console.log(`replacing string-based action in a route in ${name}`);
         contents = contents.replace(
           /\{\{action ["']([^"']+)["']\}\}/g,
-          "{{@controller.$1}}"
+          "{{@controller.$1}}",
         );
       }
 
       if (/\s(\{\{|\()action\b/.test(contents)) {
         errors.push(
-          `⚠️ please convert a string-based action in a route in ${name}`
+          `⚠️ please convert a string-based action in a route in ${name}`,
         );
       }
 
+      writeFileSync(name, contents);
+    }
+
+    if (contents.includes("discourse/plugins/styleguide/")) {
+      contents = replaceStyleguideImports(contents);
       writeFileSync(name, contents);
     }
   }
