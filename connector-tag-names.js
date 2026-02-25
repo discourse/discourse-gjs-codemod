@@ -444,7 +444,6 @@ const connectorTagNames = {
   "homepage-topic-list-admin-dropdown-after": "",
   "homepage-topic-list-navigation": "",
   "below-topic-list-toggle": "",
-  "user-activity-bottom": "",
   "vendor-directory-main-outlet": "",
   "search-banner-below-input": "",
   "above-custom-category-columns": "",
